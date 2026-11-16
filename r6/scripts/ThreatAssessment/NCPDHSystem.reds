@@ -90,6 +90,7 @@ public class NCPDHSystem extends ScriptableSystem {
   private let m_lastValidUnitTime: Float;
   private let m_units: array<ref<NCPDHUnit>>;
   private let m_corp: ref<NCPDHCorp>;
+  private let m_handoverLogged: Bool;
   private let m_vehicles: array<ref<NCPDHVehicle>>;
   private let m_eliteAnnounced: Bool;
   private let m_lastStandoffLine: Float;
@@ -323,6 +324,72 @@ public class NCPDHSystem extends ScriptableSystem {
     }
   }
 
+  // ================================================================ corporate handover
+  // 3-4 stars in a corporate district (setting): NCPD withdraws and the corporation takes over.
+  public func HandedOver(ps: ref<PreventionSystem>, stage: Int32) -> Bool {
+    let cfg = this.Config();
+    return cfg.corpResponse && cfg.corpTakeover && stage >= 3 && stage <= 4 && this.Active(ps)
+      && NotEquals(NCPDHCorp.ChoiceFor(cfg, ps), NCPDHCorpChoice.Off);
+  }
+
+  public func CorpEngaged() -> Bool {
+    return IsDefined(this.m_corp) && this.m_corp.Engaged(this.GetGameInstance());
+  }
+
+  // A corporate unit went down: it counts like a police kill (kill streak and major crimes).
+  public func OnCorpUnitDown(stage: Int32) -> Void {
+    let cfg = this.Config();
+    this.m_copKillsThisChase += 1;
+    if stage < 3 || !cfg.plateau {
+      return;
+    }
+    this.m_copKillsTowardEvent += 1;
+    if this.m_copKillsTowardEvent >= cfg.copKillsPerEvent {
+      this.m_copKillsTowardEvent = 0;
+      this.AddEscalation(s"\(cfg.copKillsPerEvent) corporate security killed");
+      let ps = this.Prevention();
+      if this.TakePendingRaise() && IsDefined(ps) {
+        ps.NCPDH_RaiseOneStar("NCPDH_CorpLosses");
+      }
+    }
+  }
+
+  // NCPD officers and cars still on the scene leave when the corporation takes over.
+  private func WithdrawPolice(registry: ref<PoliceAgentRegistry>, vPos: Vector4, now: Float) -> Void {
+    let game = this.GetGameInstance();
+    let agents = registry.GetNPCList();
+    let i = 0;
+    while i < ArraySize(agents) {
+      let a = agents[i];
+      i += 1;
+      if IsDefined(a) && !a.isQuestNPC && IsDefined(a.unit) && a.unit.IsActive()
+          && !PreventionSystem.IsPreventionMaxTac(game, a.unit) && !VehicleComponent.IsMountedToVehicle(game, a.unit) {
+        let rec = this.GetUnit(a.unit.GetEntityID());
+        if rec.mode != 3 {
+          this.Flee(a.unit, rec, vPos, now, false);
+        }
+      }
+    }
+    let cars = registry.GetVehicleList();
+    i = 0;
+    while i < ArraySize(cars) {
+      let c = cars[i];
+      i += 1;
+      if IsDefined(c) && IsDefined(c.unit) && !c.unit.IsDestroyed() {
+        let vrec = this.GetVehicle(c.unit.GetEntityID());
+        if vrec.mode != 3 {
+          vrec.mode = 3;
+          if Vector4.Distance(c.unit.GetWorldPosition(), vPos) > 50.0 {
+            GameInstance.GetPreventionSpawnSystem(game).RequestDespawnVehicleAndPassengers(c.unit);
+          } else {
+            // Close by: the crew gets out and walks away with the others.
+            VehicleComponent.QueueEventToAllPassengers(game, c.unit, AIEvents.ExitVehicleEvent());
+          }
+        }
+      }
+    }
+  }
+
   // ================================================================ heat changes
   public func OnHeatChanged(ps: ref<PreventionSystem>, prev: Int32, cur: Int32) -> Void {
     this.Log(s"Heat \(prev) -> \(cur)");
@@ -453,7 +520,21 @@ public class NCPDHSystem extends ScriptableSystem {
 
     // Engaged: officers are fighting V right now. Otherwise they are searching, and the ring is
     // set around the last place they saw V instead of where V really is.
-    let engaged = IsDefined(registry) && registry.IsPoliceInCombatWithPalyer();
+    let engaged = (IsDefined(registry) && registry.IsPoliceInCombatWithPalyer()) || this.CorpEngaged();
+    let handedOver = this.HandedOver(ps, stage);
+    if handedOver && IsDefined(registry) {
+      if !this.m_handoverLogged {
+        this.m_handoverLogged = true;
+        this.Log("NCPD hands over to corporate security");
+        NCPDHVoice.Play(this, NCPDHVoiceEvent.GiveUp, null);
+      }
+      this.WithdrawPolice(registry, vPos, now);
+    } else {
+      if this.m_handoverLogged && stage >= 5 {
+        this.Log("5 stars: NCPD back on the scene with the corporation and MaxTac");
+      }
+      this.m_handoverLogged = false;
+    }
     let lkp = ps.GetLastKnownPlayerPosition();
     if Vector4.IsXYZZero(lkp) {
       lkp = vPos;
@@ -869,7 +950,7 @@ public class NCPDHSystem extends ScriptableSystem {
           if IsDefined(agent) && !agent.isQuestNPC && IsDefined(agent.unit) && agent.unit.IsActive() {
             let rec = this.GetUnit(agent.unit.GetEntityID());
             if (rec.mode == 1 || rec.mode == 2 || rec.mode == 4) && NCPDHSystem.IsLowRank(agent.unit) && RandF() < chance {
-              this.Flee(agent.unit, rec, vPos, now);
+              this.Flee(agent.unit, rec, vPos, now, true);
             }
           }
         }
@@ -888,7 +969,7 @@ public class NCPDHSystem extends ScriptableSystem {
     return Equals(r, gamedataNPCRarity.Trash) || Equals(r, gamedataNPCRarity.Weak) || Equals(r, gamedataNPCRarity.Normal);
   }
 
-  private func Flee(unit: wref<ScriptedPuppet>, rec: ref<NCPDHUnit>, vPos: Vector4, now: Float) -> Void {
+  private func Flee(unit: wref<ScriptedPuppet>, rec: ref<NCPDHUnit>, vPos: Vector4, now: Float, opt scared: Bool) -> Void {
     let game = this.GetGameInstance();
     let player = GetPlayer(game);
     if IsDefined(rec.cmd) {
@@ -928,8 +1009,12 @@ public class NCPDHSystem extends ScriptableSystem {
     AIComponent.SendCommand(unit, cmd);
     rec.cmd = cmd;
     rec.sentAt = now;
-    this.Log(s"Officer \(EntityID.ToDebugString(unit.GetEntityID())) flees");
-    NCPDHVoice.Play(this, NCPDHVoiceEvent.Flee, unit);
+    if scared {
+      this.Log(s"Officer \(EntityID.ToDebugString(unit.GetEntityID())) flees");
+      NCPDHVoice.Play(this, NCPDHVoiceEvent.Flee, unit);
+    } else {
+      this.Log(s"Officer \(EntityID.ToDebugString(unit.GetEntityID())) withdraws: corporate jurisdiction");
+    }
     let cb = new NCPDHDespawnCallback();
     cb.sys = this;
     cb.id = unit.GetEntityID();

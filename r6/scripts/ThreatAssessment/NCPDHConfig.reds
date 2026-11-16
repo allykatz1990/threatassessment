@@ -367,8 +367,14 @@ public class NCPDHConfig {
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "NCPD hands over at 3-4 stars")
+  @runtimeProperty("ModSettings.description", "In corporate districts: NCPD handles 1-2 stars, pulls out completely at 3-4 stars and leaves it to the corporation, then comes back alongside the corporation and MaxTac at 5 stars. Off: police and corporation work side by side from the star level above.")
+  public let corpTakeover: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
   @runtimeProperty("ModSettings.displayName", "Corporate units per 100 police")
-  @runtimeProperty("ModSettings.description", "How many corporate units come for every 100 NCPD officers on the scene. 100 is one for one: 10 officers, 10 corporate soldiers.")
+  @runtimeProperty("ModSettings.description", "How many corporate units come for every 100 NCPD officers on the scene (at 3-4 stars with the handover on: for every 100 the police would have sent). 100 is one for one.")
   @runtimeProperty("ModSettings.step", "10")
   @runtimeProperty("ModSettings.min", "10")
   @runtimeProperty("ModSettings.max", "300")

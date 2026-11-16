@@ -42,6 +42,15 @@ public func NCPDH_QuestFree() -> Bool {
 }
 
 @addMethod(PreventionSystem)
+public func NCPDH_CurrentTableID() -> TweakDBID {
+  if IsDefined(this.m_preventionDataTable) {
+    return this.m_preventionDataTable.GetID();
+  }
+  let none: TweakDBID;
+  return none;
+}
+
+@addMethod(PreventionSystem)
 public func NCPDH_RaiseOneStar(reason: String) -> Void {
   this.HeatPipeline(reason);
 }
@@ -114,9 +123,9 @@ private final func TryUpdateStarState() -> Void {
     if NCPDHSystem.Stage(this.m_heatStage) >= 3 {
       sys.EnsureTicking();
     }
-    if sys.IsHoldingPerimeter() && !this.m_securityAreaResetCheck && IsDefined(this.m_player) {
+    if (sys.IsHoldingPerimeter() || sys.CorpEngaged()) && !this.m_securityAreaResetCheck && IsDefined(this.m_player) {
       // Heat freeze: the police always know where V is while the ring holds, so the stars never
-      // go grey or start to fade.
+      // go grey or start to fade. Corporate squads fighting V count as the police seeing V.
       this.SetLastKnownPlayerPosition(this.m_player.GetWorldPosition());
       this.UpdateStarStateTo(EStarState.Active);
       return;

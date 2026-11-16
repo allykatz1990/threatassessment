@@ -28,6 +28,7 @@ public class NCPDHCorpUnit {
   public let spawnedAt: Float;
   public let ready: Bool;     // made hostile and given V as a target
   public let isMech: Bool;
+  public let down: Bool;      // killed or knocked out, already counted
 }
 
 public class NCPDHCorp {
@@ -233,8 +234,12 @@ public class NCPDHCorp {
       } else {
         this.m_heldForGangs = false;
         if now >= this.m_firstWaveAt && now - this.m_lastWave >= cfg.corpWaveDelay {
-          // Match the police on the scene: one corporate unit for every officer (setting).
+          // Match the police on the scene: one corporate unit for every officer (setting). While NCPD
+          // has handed over (3-4 stars), match the number the police would have sent instead.
           let police = NCPDHCorp.PoliceOnScene(game);
+          if sys.HandedOver(ps, stage) {
+            police = NCPDHResponse.ExpectedPolice(sys, ps.NCPDH_CurrentTableID(), stage);
+          }
           let target = Clamp(police * cfg.corpRatio / 100, cfg.corpMin, cfg.corpMax);
           let alive = this.AliveCount(des);
           if alive < target {
@@ -260,6 +265,10 @@ public class NCPDHCorp {
         }
       } else {
         let dist = Vector4.Distance(unit.GetWorldPosition(), player.GetWorldPosition());
+        if !unit.IsActive() && !u.down && u.ready {
+          u.down = true;
+          sys.OnCorpUnitDown(stage);
+        }
         if !unit.IsActive() {
           if dist > 40.0 || now - u.spawnedAt > 600.0 {
             des.DeleteEntity(u.id);
@@ -286,6 +295,25 @@ public class NCPDHCorp {
       i -= 1;
     }
     return valid;
+  }
+
+  // Any corporate unit fighting V right now, close enough to matter.
+  public func Engaged(game: GameInstance) -> Bool {
+    let des = GameInstance.GetDynamicEntitySystem();
+    let player = GetPlayer(game);
+    if !IsDefined(des) || !IsDefined(player) {
+      return false;
+    }
+    let i = 0;
+    while i < ArraySize(this.m_units) {
+      let unit = des.GetEntity(this.m_units[i].id) as ScriptedPuppet;
+      if IsDefined(unit) && unit.IsActive() && NPCPuppet.IsInCombat(unit)
+          && Vector4.Distance(unit.GetWorldPosition(), player.GetWorldPosition()) < 100.0 {
+        return true;
+      }
+      i += 1;
+    }
+    return false;
   }
 
   // Active NCPD officers registered in the chase (MaxTac not counted).

@@ -67,9 +67,13 @@ public abstract class NCPDHResponse {
     let delayPct = 100;
     if allowed && cfg.responseScaling {
       countPct = NCPDHResponse.CountPercent(cfg, stage);
-      if corpZone && stage >= cfg.corpStars {
-        // Corporate security takes over part of the job here.
-        countPct = Max(10, countPct * cfg.corpNcpdShare / 100);
+      if corpZone && cfg.corpTakeover && stage >= 3 && stage <= 4 {
+        // 3-4 stars in a corporate district: the corporation handles it, NCPD sends nobody.
+        countPct = 0;
+      } else {
+        if corpZone && stage >= cfg.corpStars {
+          countPct = Max(10, countPct * cfg.corpNcpdShare / 100);
+        }
       }
       delayPct = stage <= 2 ? cfg.lowStarDelay : 100;
     }
@@ -86,6 +90,23 @@ public abstract class NCPDHResponse {
       TweakDBManager.UpdateRecord(id);
       sys.Log(s"Response for \(stage) stars: \(countPct)% units and cars, \(delayPct)% time between cars (\(TDBID.ToStringDEBUG(id))): max officers \(table.MaxUnitCount()), cars \(table.SpawnedEngagedCars()) + \(table.SpawnedSupportCars()) support, tickets \(table.VehicleTicketsAmount())");
     }
+  }
+
+  // How many officers the police would have at most for this table and star level, before any
+  // corporate takeover. Used to size the corporate response when NCPD has handed over.
+  public static func ExpectedPolice(sys: ref<NCPDHSystem>, table: TweakDBID, stage: Int32) -> Int32 {
+    let cache = NCPDHTweakCache.Get();
+    if !IsDefined(cache) {
+      return 0;
+    }
+    let flat = table;
+    TDBID.Append(flat, t".maxUnitCount");
+    let base = cache.BaseInt(flat);
+    if base < 0 {
+      return 0;
+    }
+    let pct = sys.Config().responseScaling ? NCPDHResponse.CountPercent(sys.Config(), stage) : 100;
+    return base * pct / 100;
   }
 
   public static func CountPercent(cfg: ref<NCPDHConfig>, stage: Int32) -> Int32 {
@@ -114,7 +135,7 @@ public abstract class NCPDHResponse {
     let want = base;
     if pct != 100 {
       want = Max(1, RoundF(Cast<Float>(base) * Cast<Float>(pct) / 100.0));
-      if base == 0 {
+      if base == 0 || pct == 0 {
         want = 0;
       }
     }
