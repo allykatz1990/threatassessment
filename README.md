@@ -17,6 +17,10 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
   a chase.
 - **Fast ramp, then a plateau.** Once the police care, heat climbs to 3 stars quickly and then stops.
   Ordinary crimes add nothing from 3 stars on.
+- **A thin response, then a big one.** 1 and 2 stars bring a few officers, and slowly. At 3 stars the
+  department commits: twice the base game's officers and cars, all sent to the perimeter.
+- **Heat that lasts.** Once the police lose you they keep searching for at least 5 in-game minutes
+  before they give up.
 - **Major crimes for 4 and 5 stars.** Only destroyed police vehicles, explosions on police, and a high
   police body count push the heat past 3. MaxTac comes only for sustained escalation.
 - **3-star containment perimeter.** Officers form a ring around V (default 30 m), take cover near it
@@ -45,11 +49,13 @@ They Will Remember and Night City Alive.
 ## Requirements
 
 - [redscript](https://www.nexusmods.com/cyberpunk2077/mods/1511)
+- [TweakXL](https://www.nexusmods.com/cyberpunk2077/mods/4197) (for the response size per star)
 - Optional, for the settings menu: [Mod Settings](https://www.nexusmods.com/cyberpunk2077/mods/4885)
   or [Mod Configuration Menu](https://www.nexusmods.com/cyberpunk2077/mods/31640). Without either,
   the defaults apply.
 
-No REDmod, no archives, no tweak files.
+No REDmod, no archives, no tweak files: the few game values it changes are set one at a time while
+the game runs.
 
 ## Install
 

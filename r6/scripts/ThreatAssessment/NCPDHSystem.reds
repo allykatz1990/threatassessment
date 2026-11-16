@@ -92,6 +92,9 @@ public class NCPDHSystem extends ScriptableSystem {
   private let m_eliteAnnounced: Bool;
   private let m_lastStandoffLine: Float;
 
+  // search: game-clock time the police lost V, or below zero while they can see V
+  private let m_searchStart: Float;
+
   // voice: last time each NCPDHVoiceEvent played
   private let m_voiceLast: array<Float>;
 
@@ -105,6 +108,7 @@ public class NCPDHSystem extends ScriptableSystem {
     this.m_lastSeriousTime = -10000.0;
     this.m_brokenAt = -10000.0;
     this.m_lastExplosionEvent = -10000.0;
+    this.m_searchStart = -1.0;
     this.m_lastStandoffLine = -10000.0;
     let i = 0;
     while i < 10 {
@@ -327,12 +331,43 @@ public class NCPDHSystem extends ScriptableSystem {
       ArrayClear(this.m_units);
       this.m_copKillsThisChase = 0;
       this.m_brokenAt = -10000.0;
+      this.m_searchStart = -1.0;
       return;
     }
     this.m_eliteAnnounced = false;
     if cur >= 3 {
       this.EnsureTicking();
     }
+  }
+
+  // ================================================================ search
+  public func GameSeconds() -> Float {
+    return GameInstance.GetTimeSystem(this.GetGameInstance()).GetGameTimeStamp();
+  }
+
+  // The police lost sight of V.
+  public func NoteSearchStart() -> Void {
+    if this.m_searchStart < 0.0 {
+      this.m_searchStart = this.GameSeconds();
+      this.Log("Police lost sight of V: search started");
+    }
+  }
+
+  // The police can see V again.
+  public func NoteSighted() -> Void {
+    this.m_searchStart = -1.0;
+  }
+
+  // In-game seconds the search must still run before the stars may start to fade.
+  public func SearchTimeLeft() -> Float {
+    let cfg = this.Config();
+    if !cfg.longSearch {
+      return 0.0;
+    }
+    if this.m_searchStart < 0.0 {
+      this.m_searchStart = this.GameSeconds();
+    }
+    return cfg.searchMinutes * 60.0 - (this.GameSeconds() - this.m_searchStart);
   }
 
   // ================================================================ perimeter

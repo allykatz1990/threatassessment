@@ -14,6 +14,10 @@
 //   PreventionSystem.OnCrimeWitnessRequest          witness calls about petty crime are ignored
 //   PreventionSystem.TryUpdateStarState             heat freeze while the perimeter holds
 //   PreventionSystem.ChangeHeatStage                tells the mod when the heat changes
+//   PreventionSystem.GetDataTableForCurrentHeat     response size per star (NCPDHResponse.reds)
+//   PreventionSystem.PoliceLostPlayer               search timing
+//   PreventionSystem.UpdateStarStateTo              search timing
+//   PreventionSystem.OnPreventionSearchingStatusRequest  police keep searching for the set time
 // Known other mods wrapping the same functions: Gang Retaliation (CalculateCrimeScoreForNPC),
 // Cop Killer (ChangeHeatStage). Both work in either load order.
 
@@ -132,4 +136,56 @@ private final func ChangeHeatStage(newHeatStage: EPreventionHeatStage, heatChang
       sys.OnHeatChanged(this, prev, cur);
     }
   }
+}
+
+// ---------------------------------------------------------------- response size
+
+@wrapMethod(PreventionSystem)
+private final func GetDataTableForCurrentHeat() -> Void {
+  let sys = NCPDHSystem.Get(this.GetGameInstance());
+  if IsDefined(sys) && IsDefined(this.m_preventionDataMatrix) {
+    // Scale the table before the game reads it, so tickets and car limits use the new values.
+    NCPDHResponse.Apply(sys, this.GetDataTableForHeat(this.m_heatStage), NCPDHSystem.Stage(this.m_heatStage), sys.Active(this));
+  }
+  wrappedMethod();
+}
+
+// ---------------------------------------------------------------- search time
+
+@wrapMethod(PreventionSystem)
+private final func PoliceLostPlayer() -> Void {
+  wrappedMethod();
+  let sys = NCPDHSystem.Get(this.GetGameInstance());
+  if IsDefined(sys) {
+    sys.NoteSearchStart();
+  }
+}
+
+@wrapMethod(PreventionSystem)
+private final func UpdateStarStateTo(state: EStarState) -> Void {
+  if Equals(state, EStarState.Active) {
+    let sys = NCPDHSystem.Get(this.GetGameInstance());
+    if IsDefined(sys) {
+      sys.NoteSighted();
+    }
+  }
+  wrappedMethod(state);
+}
+
+// The grey-star search timer ran out. Keep searching until the shortest search time has passed.
+// Quest triggers that soften or force de-escalation are left alone.
+@wrapMethod(PreventionSystem)
+private final func OnPreventionSearchingStatusRequest(evt: ref<PreventionSearchingStatusRequest>) -> Void {
+  let sys = NCPDHSystem.Get(this.GetGameInstance());
+  if IsDefined(sys) && sys.Active(this) && this.IsChasingPlayer() && !this.m_forceEternalGreyStars
+      && !GameInstance.GetPreventionSpawnSystem(this.GetGameInstance()).IsPlayerInSoftDeescalationTrigger() {
+    let left = sys.SearchTimeLeft();
+    if left > 0.0 {
+      this.CancelSearchingTimerRequest();
+      this.m_searchingStatusDelayID = GameInstance.GetDelaySystem(this.GetGameInstance()).DelayScriptableSystemRequest(n"PreventionSystem", new PreventionSearchingStatusRequest(), 5.0);
+      sys.Log(s"Still searching: \(RoundF(left / 60.0)) in-game minutes left");
+      return;
+    }
+  }
+  wrappedMethod(evt);
 }

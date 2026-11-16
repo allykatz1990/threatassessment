@@ -80,6 +80,83 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.max", "100")
   public let plateauLeak: Int32 = 0;
 
+  // ------------------------------------------------------------------ Search
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Search")
+  @runtimeProperty("ModSettings.displayName", "Police keep searching longer")
+  @runtimeProperty("ModSettings.description", "Once the police lose sight of you they keep searching (grey stars) for at least the time below before the stars start to fade.")
+  public let longSearch: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Search")
+  @runtimeProperty("ModSettings.displayName", "Shortest search (in-game minutes)")
+  @runtimeProperty("ModSettings.description", "Measured on the game clock. At the normal clock speed one in-game minute is about 7.5 real seconds, so 5 in-game minutes is about 40 real seconds.")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "1")
+  @runtimeProperty("ModSettings.max", "60")
+  public let searchMinutes: Float = 5.0;
+
+  // ------------------------------------------------------------------ Response size
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Response size")
+  @runtimeProperty("ModSettings.displayName", "Change how many police respond")
+  @runtimeProperty("ModSettings.description", "Scales the number of officers and police cars the game sends at each star level (percentages below). Applies the next time the heat changes.")
+  public let responseScaling: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Response size")
+  @runtimeProperty("ModSettings.displayName", "1 star (percent of base game)")
+  @runtimeProperty("ModSettings.description", "Officers and cars sent at 1 star, compared with the base game.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "10")
+  @runtimeProperty("ModSettings.max", "400")
+  public let response1: Int32 = 50;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Response size")
+  @runtimeProperty("ModSettings.displayName", "2 stars (percent of base game)")
+  @runtimeProperty("ModSettings.description", "Officers and cars sent at 2 stars, compared with the base game.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "10")
+  @runtimeProperty("ModSettings.max", "400")
+  public let response2: Int32 = 60;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Response size")
+  @runtimeProperty("ModSettings.displayName", "3 stars (percent of base game)")
+  @runtimeProperty("ModSettings.description", "Officers and cars sent at 3 stars, compared with the base game. This is when the big response starts. They all go to the perimeter.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "10")
+  @runtimeProperty("ModSettings.max", "400")
+  public let response3: Int32 = 200;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Response size")
+  @runtimeProperty("ModSettings.displayName", "4 stars (percent of base game)")
+  @runtimeProperty("ModSettings.description", "Officers and cars sent at 4 stars, compared with the base game.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "10")
+  @runtimeProperty("ModSettings.max", "400")
+  public let response4: Int32 = 200;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Response size")
+  @runtimeProperty("ModSettings.displayName", "5 stars (percent of base game)")
+  @runtimeProperty("ModSettings.description", "Officers and cars sent at 5 stars, compared with the base game. MaxTac follows its own rules.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "10")
+  @runtimeProperty("ModSettings.max", "400")
+  public let response5: Int32 = 150;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Response size")
+  @runtimeProperty("ModSettings.displayName", "Time between cars at 1-2 stars (percent)")
+  @runtimeProperty("ModSettings.description", "How long the police take between sending cars at 1 and 2 stars, compared with the base game. 200 is twice as slow.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "50")
+  @runtimeProperty("ModSettings.max", "500")
+  public let lowStarDelay: Int32 = 200;
+
   // ------------------------------------------------------------------ Escalation
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Escalation (4 and 5 stars)")

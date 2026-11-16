@@ -3,6 +3,12 @@
 Every base-game function this mod touches is wrapped (`@wrapMethod`), never replaced. No tweak
 files, no archives, no REDmod.
 
+Tweak values changed at runtime (TweakXL `SetFlat`, one value at a time, originals cached for the
+session): on each `PreventionHeatTable_Record` the game uses, `maxUnitCount`, `maxUnitFallbackCount`,
+`spawnedEngagedCars`, `spawnedSupportCars`, `vehicleTicketsAmount`, `vehicleSpawnCooldown`,
+`vehicleTicketCooldown`. Mods that set the same values in `.yaml` / `.tweak` files still work: their
+values become the base this mod scales from.
+
 | Function (class `PreventionSystem`) | Why | Other mods on the test PC that wrap it |
 |---|---|---|
 | `CalculateCrimeScoreForNPC` | Petty crime filter, ramp, 3-star plateau, major-crime count | Gang Retaliation 1.4.0 (`PoliceImmunity.reds`) |
@@ -11,6 +17,10 @@ files, no archives, no REDmod.
 | `OnCrimeWitnessRequest` | Witness calls about petty crime are ignored | – |
 | `TryUpdateStarState` | Heat freeze while the perimeter holds | – |
 | `ChangeHeatStage` | Tells the mod when heat changes | Cop Killer 2.42 |
+| `GetDataTableForCurrentHeat` | Response size per star | – |
+| `PoliceLostPlayer` | Search timing | – |
+| `UpdateStarStateTo` | Search timing | – |
+| `OnPreventionSearchingStatusRequest` | Police keep searching for the set time | – |
 
 Added methods: `PreventionSystem.NCPDH_QuestFree`, `PreventionSystem.NCPDH_RaiseOneStar`.
 
