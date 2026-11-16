@@ -37,4 +37,10 @@ Enemies of Night City, Cyber Enemies 1.0.2, Lifepath Bonuses 4.3.4, NightCityTra
 DynamicCityDensity 1.5, ImmersiveShootingAI, Stealthrunner, BetterStealth, CollateralDamage 2.5,
 Trace Position Overhaul, Spawned NPC Post Combat Fix. None replaces a function listed above.
 
+Corporate squads: spawned with Codeware's `DynamicEntitySystem`, tagged `ThreatAssessment` and
+`ThreatAssessment.Corp`, from base-game Arasaka, Militech and Kang Tao character records (missing
+records are skipped). They wait while entities tagged `TheyWillRemember.Squad` (They Will Remember)
+or `GangRetaliation` (Gang Retaliation) exist, so ambushes don't stack. No code dependency on
+either mod.
+
 Watch in testing: Cop Killer and Gang Retaliation also send move orders to NPCs in some situations.

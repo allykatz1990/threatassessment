@@ -89,6 +89,7 @@ public class NCPDHSystem extends ScriptableSystem {
   private let m_brokenAt: Float;
   private let m_lastValidUnitTime: Float;
   private let m_units: array<ref<NCPDHUnit>>;
+  private let m_corp: ref<NCPDHCorp>;
   private let m_vehicles: array<ref<NCPDHVehicle>>;
   private let m_eliteAnnounced: Bool;
   private let m_lastStandoffLine: Float;
@@ -106,6 +107,8 @@ public class NCPDHSystem extends ScriptableSystem {
 
   private func OnAttach() -> Void {
     this.m_instanceID = RandRange(1, 2000000000);
+    this.m_corp = new NCPDHCorp();
+    this.m_corp.Reset();
     this.m_lastPettyTime = -10000.0;
     this.m_lastSeriousTime = -10000.0;
     this.m_brokenAt = -10000.0;
@@ -334,10 +337,13 @@ public class NCPDHSystem extends ScriptableSystem {
       this.m_copKillsThisChase = 0;
       this.m_brokenAt = -10000.0;
       this.m_searchStart = -1.0;
+      if this.m_corp.HasUnits() {
+        this.EnsureTicking();   // corporate squads still need to leave
+      }
       return;
     }
     this.m_eliteAnnounced = false;
-    if cur >= 3 {
+    if cur >= 3 || cur >= this.Config().corpStars {
       this.EnsureTicking();
     }
   }
@@ -413,22 +419,30 @@ public class NCPDHSystem extends ScriptableSystem {
       return;
     }
     let stage = NCPDHSystem.Stage(ps.GetHeatStage());
-    if stage < 3 {
-      this.Dissolve("below 3 stars");
-      return;
-    }
     let now = this.Now();
     let dt = ClampF(now - this.m_lastTickTime, 0.0, 2.0);
     this.m_lastTickTime = now;
-
     let player = GetPlayer(game);
+    let here = IsDefined(player) ? player.GetWorldPosition() : this.m_anchor;
+    if stage < 3 {
+      this.Dissolve("below 3 stars");
+      // Corporate squads can answer below 3 stars (setting), and leave after the chase.
+      if this.m_corp.HasUnits() || (stage > 0 && stage >= cfg.corpStars) {
+        this.m_corp.Tick(this, ps, stage, now, here, false);
+        this.ScheduleTick(1.0);
+      }
+      return;
+    }
+
     if !cfg.perimeter || !this.Active(ps) || !ps.CanPreventionReactToInput() || !IsDefined(player) {
       this.Dissolve("switched off or quest controls the police");
+      this.m_corp.Tick(this, ps, stage, now, here, false);
       this.ScheduleTick(2.0);
       return;
     }
     if ps.IsPlayerMounted() {
       this.Dissolve("V is in a vehicle");
+      this.m_corp.Tick(this, ps, stage, now, here, false);
       this.ScheduleTick(1.0);
       return;
     }
@@ -480,11 +494,16 @@ public class NCPDHSystem extends ScriptableSystem {
       }
     }
 
+    let valid = 0;
     if this.m_perimeterOn && IsDefined(registry) {
       if cfg.carPerimeter {
         this.CommandVehicles(registry, now);
       }
-      let valid = this.CommandUnits(registry, stage, now);
+      valid = this.CommandUnits(registry, stage, now);
+    }
+    // Corporate squads: waves arrive whether or not a ring stands; on it they keep the ring rules.
+    valid += this.m_corp.Tick(this, ps, stage, now, this.m_perimeterOn ? this.m_anchor : vPos, this.m_perimeterOn);
+    if this.m_perimeterOn {
       if valid > 0 {
         this.m_lastValidUnitTime = now;
       }
@@ -522,9 +541,7 @@ public class NCPDHSystem extends ScriptableSystem {
 
   // One officer. Returns true if he is part of the ring.
   private func CommandOne(agent: ref<NPCAgent>, stage: Int32, now: Float) -> Bool {
-    let cfg = this.Config();
     let game = this.GetGameInstance();
-    let tolerance = 4.0;
     if !IsDefined(agent) || agent.isQuestNPC || agent.markedToBeDespawned {
       return false;
     }
@@ -532,6 +549,15 @@ public class NCPDHSystem extends ScriptableSystem {
     if !IsDefined(unit) || !unit.IsActive() || VehicleComponent.IsMountedToVehicle(game, unit) {
       return false;
     }
+    // Roadblock crews already hold behind their own cars: leave them unless they wander inside.
+    let roadblockCrew = Equals(agent.spawnedType, DynamicVehicleType.RoadBlockade) || Equals(agent.spawnedType, DynamicVehicleType.RoadBlockadeWithAV);
+    return this.RingUnit(unit, stage, now, roadblockCrew);
+  }
+
+  // The ring rules for one unit on foot: police and corporate squads alike.
+  public func RingUnit(unit: wref<ScriptedPuppet>, stage: Int32, now: Float, roadblockCrew: Bool) -> Bool {
+    let cfg = this.Config();
+    let tolerance = 4.0;
     let rec = this.GetUnit(unit.GetEntityID());
     if rec.mode == 3 {
       return false;
@@ -570,9 +596,6 @@ public class NCPDHSystem extends ScriptableSystem {
     }
     let ring = new Vector4(this.m_anchor.X + dx / d * cfg.radius, this.m_anchor.Y + dy / d * cfg.radius, pos.Z, 1.0);
     let gap = d - cfg.radius;
-
-    // Roadblock crews already hold behind their own cars: leave them unless they wander inside.
-    let roadblockCrew = Equals(agent.spawnedType, DynamicVehicleType.RoadBlockade) || Equals(agent.spawnedType, DynamicVehicleType.RoadBlockadeWithAV);
 
     if cfg.useCover {
       if !rec.presetSent {

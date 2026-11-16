@@ -331,6 +331,165 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.max", "100")
   public let fleeMax: Int32 = 60;
 
+  // ------------------------------------------------------------------ Corporate response
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Corporate security in corporate districts")
+  @runtimeProperty("ModSettings.description", "In the districts set below, the corporation that owns the turf sends its own security squads alongside the police. They hold the perimeter like the police, and their elite units go in at the star level set under Who may enter the perimeter.")
+  public let corpResponse: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Stars before corporate security responds")
+  @runtimeProperty("ModSettings.description", "The heat level at which corporate squads start arriving.")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "1")
+  @runtimeProperty("ModSettings.max", "5")
+  public let corpStars: Int32 = 3;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Response time (seconds)")
+  @runtimeProperty("ModSettings.description", "How long after the heat reaches that level the first corporate squad arrives.")
+  @runtimeProperty("ModSettings.step", "5")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "180")
+  public let corpDelay: Float = 20.0;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Time between squads (seconds)")
+  @runtimeProperty("ModSettings.description", "How soon losses are replaced with a new squad.")
+  @runtimeProperty("ModSettings.step", "5")
+  @runtimeProperty("ModSettings.min", "10")
+  @runtimeProperty("ModSettings.max", "300")
+  public let corpWaveDelay: Float = 40.0;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Corporate units at 3 stars")
+  @runtimeProperty("ModSettings.description", "How many corporate units are on the scene at once at 3 stars.")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "1")
+  @runtimeProperty("ModSettings.max", "16")
+  public let corpSquad3: Int32 = 4;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Corporate units at 4 stars")
+  @runtimeProperty("ModSettings.description", "At 4 stars, heavier units join (Militech adds drones).")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "1")
+  @runtimeProperty("ModSettings.max", "16")
+  public let corpSquad4: Int32 = 6;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Corporate units at 5 stars")
+  @runtimeProperty("ModSettings.description", "At 5 stars, mostly elite units.")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "1")
+  @runtimeProperty("ModSettings.max", "16")
+  public let corpSquad5: Int32 = 8;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Mech at 5 stars")
+  @runtimeProperty("ModSettings.description", "Arasaka and Militech bring one mech at 5 stars.")
+  public let corpMechs: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "NCPD in corporate districts (percent)")
+  @runtimeProperty("ModSettings.description", "Once corporate security responds, how many police still come, compared with the normal response for that star level. 0 leaves it to the corporation alone.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let corpNcpdShare: Int32 = 50;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Wait while a gang squad is on you")
+  @runtimeProperty("ModSettings.description", "Corporate squads hold back while a They Will Remember or Gang Retaliation squad is already after you, so two ambushes never stack.")
+  public let corpHoldForGangs: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate districts")
+  @runtimeProperty("ModSettings.displayName", "Corpo Plaza")
+  @runtimeProperty("ModSettings.description", "Arasaka Tower, Militech and Kang Tao offices: shared ground.")
+  @runtimeProperty("ModSettings.displayValues.Off", "NCPD only")
+  @runtimeProperty("ModSettings.displayValues.Arasaka", "Arasaka")
+  @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
+  @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
+  @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  public let corpCorpoPlaza: NCPDHCorpChoice = NCPDHCorpChoice.Mixed;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate districts")
+  @runtimeProperty("ModSettings.displayName", "Downtown")
+  @runtimeProperty("ModSettings.description", "The rest of City Center.")
+  @runtimeProperty("ModSettings.displayValues.Off", "NCPD only")
+  @runtimeProperty("ModSettings.displayValues.Arasaka", "Arasaka")
+  @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
+  @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
+  @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  public let corpDowntown: NCPDHCorpChoice = NCPDHCorpChoice.Mixed;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate districts")
+  @runtimeProperty("ModSettings.displayName", "Arasaka Waterfront")
+  @runtimeProperty("ModSettings.description", "Arasaka's docks and warehouses in Watson.")
+  @runtimeProperty("ModSettings.displayValues.Off", "NCPD only")
+  @runtimeProperty("ModSettings.displayValues.Arasaka", "Arasaka")
+  @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
+  @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
+  @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  public let corpArasakaWaterfront: NCPDHCorpChoice = NCPDHCorpChoice.Arasaka;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate districts")
+  @runtimeProperty("ModSettings.displayName", "North Oak")
+  @runtimeProperty("ModSettings.description", "The Arasaka estate and the richest hills in the city.")
+  @runtimeProperty("ModSettings.displayValues.Off", "NCPD only")
+  @runtimeProperty("ModSettings.displayValues.Arasaka", "Arasaka")
+  @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
+  @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
+  @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  public let corpNorthOaks: NCPDHCorpChoice = NCPDHCorpChoice.Arasaka;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate districts")
+  @runtimeProperty("ModSettings.displayName", "Charter Hill")
+  @runtimeProperty("ModSettings.description", "Westbrook's corporate offices.")
+  @runtimeProperty("ModSettings.displayValues.Off", "NCPD only")
+  @runtimeProperty("ModSettings.displayValues.Arasaka", "Arasaka")
+  @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
+  @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
+  @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  public let corpCharterHill: NCPDHCorpChoice = NCPDHCorpChoice.Off;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate districts")
+  @runtimeProperty("ModSettings.displayName", "Japantown")
+  @runtimeProperty("ModSettings.description", "Westbrook's entertainment district.")
+  @runtimeProperty("ModSettings.displayValues.Off", "NCPD only")
+  @runtimeProperty("ModSettings.displayValues.Arasaka", "Arasaka")
+  @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
+  @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
+  @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  public let corpJapanTown: NCPDHCorpChoice = NCPDHCorpChoice.Off;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate districts")
+  @runtimeProperty("ModSettings.displayName", "Dogtown")
+  @runtimeProperty("ModSettings.description", "Barghest runs Dogtown, but Militech is never far.")
+  @runtimeProperty("ModSettings.displayValues.Off", "NCPD only")
+  @runtimeProperty("ModSettings.displayValues.Arasaka", "Arasaka")
+  @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
+  @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
+  @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  public let corpDogtown: NCPDHCorpChoice = NCPDHCorpChoice.Off;
+
   // ------------------------------------------------------------------ Voice
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Voice lines")

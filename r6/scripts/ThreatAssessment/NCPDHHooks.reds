@@ -145,7 +145,8 @@ private final func GetDataTableForCurrentHeat() -> Void {
   let sys = NCPDHSystem.Get(this.GetGameInstance());
   if IsDefined(sys) && IsDefined(this.m_preventionDataMatrix) {
     // Scale the table before the game reads it, so tickets and car limits use the new values.
-    NCPDHResponse.Apply(sys, this.GetDataTableForHeat(this.m_heatStage), NCPDHSystem.Stage(this.m_heatStage), sys.Active(this));
+    let corpZone = NotEquals(NCPDHCorp.ChoiceFor(sys.Config(), this), NCPDHCorpChoice.Off);
+    NCPDHResponse.Apply(sys, this.GetDataTableForHeat(this.m_heatStage), NCPDHSystem.Stage(this.m_heatStage), sys.Active(this), corpZone);
   }
   wrappedMethod();
 }

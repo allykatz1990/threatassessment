@@ -31,6 +31,11 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
   The more police V has killed, the more likely.
 - **Only the heavy hitters go in.** At 5 stars MaxTac and heavily armored units (Elite rank, heavy
   weapons) move inside the ring while regular officers keep holding it.
+- **Corporate jurisdictions.** In Corpo Plaza, Downtown, Arasaka Waterfront and North Oak, the
+  corporation that owns the turf sends its own security from 3 stars, alongside fewer NCPD: Arasaka,
+  Militech or Kang Tao, or a random one on shared ground. Heavier units at 4 stars (Militech brings
+  drones), elites and a mech at 5. They hold the perimeter like the police, and their elites go in
+  with MaxTac. Every district can be set to any corporation or to NCPD only.
 - **Officer voice lines.** Officers call out the perimeter, breakouts, fleeing, MaxTac arriving and
   giving up, in their own voices, using the game's own lines.
 - **Quest safe.** The mod does nothing while a quest is controlling the police, and never gives
@@ -39,17 +44,17 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
 
 ## Planned
 
-Delayed dispatch and thinner low-star response, interruptible witness calls, response to the crime
-scene instead of the player, fewer roaming patrols, district wealth scaling, district-based corporate
-jurisdictions (Arasaka, Militech, Kang Tao), optional bribes, and optional integration with
-They Will Remember and Night City Alive.
+Interruptible witness calls, response to the crime scene instead of the player, fewer roaming
+patrols, district wealth scaling, corporations answering attacks on their own guards at any heat,
+optional bribes, and deeper integration with They Will Remember and Night City Alive.
 
 ![Features](features.jpg)
 
 ## Requirements
 
 - [redscript](https://www.nexusmods.com/cyberpunk2077/mods/1511)
-- [TweakXL](https://www.nexusmods.com/cyberpunk2077/mods/4197) (for the response size per star)
+- [TweakXL](https://www.nexusmods.com/cyberpunk2077/mods/4197) (response size per star)
+- [Codeware](https://www.nexusmods.com/cyberpunk2077/mods/7780) (corporate squads)
 - Optional, for the settings menu: [Mod Settings](https://www.nexusmods.com/cyberpunk2077/mods/4885)
   or [Mod Configuration Menu](https://www.nexusmods.com/cyberpunk2077/mods/31640). Without either,
   the defaults apply.

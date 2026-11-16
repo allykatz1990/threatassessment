@@ -57,7 +57,7 @@ public abstract class NCPDHResponse {
 
   // Scales one heat table for its star level. With allowed false (mod off, or a quest steering the
   // police) the original values are put back.
-  public static func Apply(sys: ref<NCPDHSystem>, table: ref<PreventionHeatTable_Record>, stage: Int32, allowed: Bool) -> Void {
+  public static func Apply(sys: ref<NCPDHSystem>, table: ref<PreventionHeatTable_Record>, stage: Int32, allowed: Bool, corpZone: Bool) -> Void {
     let cache = NCPDHTweakCache.Get();
     if !IsDefined(sys) || !IsDefined(table) || !IsDefined(cache) || stage < 1 {
       return;
@@ -67,6 +67,10 @@ public abstract class NCPDHResponse {
     let delayPct = 100;
     if allowed && cfg.responseScaling {
       countPct = NCPDHResponse.CountPercent(cfg, stage);
+      if corpZone && stage >= cfg.corpStars {
+        // Corporate security takes over part of the job here.
+        countPct = Max(10, countPct * cfg.corpNcpdShare / 100);
+      }
       delayPct = stage <= 2 ? cfg.lowStarDelay : 100;
     }
     let id = table.GetID();
