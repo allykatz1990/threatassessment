@@ -1,0 +1,863 @@
+// Threat Assessment - Tactical Police & Jurisdiction Overhaul - core system
+// Copyright (C) 2026 the Threat Assessment authors. Written with AI assistance.
+//
+// This program is free software: you can redistribute it and/or modify it under the terms of the
+// GNU General Public License as published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version. It is distributed WITHOUT ANY WARRANTY. See the
+// GNU General Public License for details: https://www.gnu.org/licenses/
+//
+// What lives here:
+//   1. The crime filter: the one place that decides whether something the player did counts.
+//      It only ever lowers or redirects the score the base game computed (see NCPDHHooks.reds).
+//   2. Escalation: the major crimes that are the only way past the 3-star plateau.
+//   3. The 3-star perimeter: a ring of officers that follows V and holds instead of rushing in.
+//   4. Officers fleeing a breakout.
+//   5. Voice lines for each of those moments (NCPDHVoice.reds).
+//
+// Quest safety: nothing here runs while a quest controls the police (see NCPDH_QuestFree in
+// NCPDHHooks.reds), and units the game flags as quest NPCs are never given orders.
+//
+// CET console, for testing:
+//   Game.GetScriptableSystemsContainer():Get("NCPDHSystem"):Report()
+
+public class NCPDHTickCallback extends DelayCallback {
+  public let sys: wref<NCPDHSystem>;
+  public let token: Int32;
+
+  public func Call() -> Void {
+    if IsDefined(this.sys) {
+      this.sys.OnTick(this.token);
+    }
+  }
+}
+
+public class NCPDHDespawnCallback extends DelayCallback {
+  public let sys: wref<NCPDHSystem>;
+  public let id: EntityID;
+
+  public func Call() -> Void {
+    if IsDefined(this.sys) {
+      this.sys.DespawnFled(this.id);
+    }
+  }
+}
+
+// One officer the perimeter has given an order to.
+public class NCPDHUnit {
+  public let id: EntityID;
+  public let cmd: ref<AICommand>;
+  public let mode: Int32;     // 0 no order, 1 moving to the ring, 2 holding the ring, 3 fled, 4 free in cover band
+  public let sentAt: Float;
+  public let target: Vector4;
+  public let presetSent: Bool;          // switched to the cautious combat style
+  public let origPreset: EAICombatPreset;
+}
+
+// One police car the perimeter has told to park on the ring.
+public class NCPDHVehicle {
+  public let id: EntityID;
+  public let mode: Int32;     // 1 driving to the ring, 2 parked and crew told to get out
+  public let sentAt: Float;
+}
+
+public class NCPDHSystem extends ScriptableSystem {
+  private let m_config: ref<NCPDHConfig>;
+  private let m_instanceID: Int32;
+
+  // crime filter
+  private let m_civKillTimes: array<Float>;
+  private let m_lastPettyTime: Float;
+  private let m_lastSeriousTime: Float;
+  private let m_pendingRaise: Bool;
+
+  // escalation
+  private let m_escalationTimes: array<Float>;
+  private let m_copKillsTowardEvent: Int32;
+  private let m_copKillsThisChase: Int32;
+  private let m_lastExplosionEvent: Float;
+
+  // perimeter
+  private let m_tickToken: Int32;
+  private let m_ticking: Bool;
+  private let m_lastTickTime: Float;
+  private let m_perimeterOn: Bool;
+  private let m_anchor: Vector4;
+  private let m_brokenAt: Float;
+  private let m_lastValidUnitTime: Float;
+  private let m_units: array<ref<NCPDHUnit>>;
+  private let m_vehicles: array<ref<NCPDHVehicle>>;
+  private let m_eliteAnnounced: Bool;
+  private let m_lastStandoffLine: Float;
+
+  // voice: last time each NCPDHVoiceEvent played
+  private let m_voiceLast: array<Float>;
+
+  public static func Get(game: GameInstance) -> ref<NCPDHSystem> {
+    return GameInstance.GetScriptableSystemsContainer(game).Get(n"NCPDHSystem") as NCPDHSystem;
+  }
+
+  private func OnAttach() -> Void {
+    this.m_instanceID = RandRange(1, 2000000000);
+    this.m_lastPettyTime = -10000.0;
+    this.m_lastSeriousTime = -10000.0;
+    this.m_brokenAt = -10000.0;
+    this.m_lastExplosionEvent = -10000.0;
+    this.m_lastStandoffLine = -10000.0;
+    let i = 0;
+    while i < 10 {
+      ArrayPush(this.m_voiceLast, -10000.0);
+      i += 1;
+    }
+  }
+
+  public func Config() -> ref<NCPDHConfig> {
+    if !IsDefined(this.m_config) {
+      this.m_config = new NCPDHConfig();
+      NCPDHRegisterSettings(this.m_config);
+    }
+    return this.m_config;
+  }
+
+  public func Log(text: String) -> Void {
+    if this.Config().debugLog {
+      ModLog(n"ThreatAssessment", text);
+    }
+  }
+
+  public func Now() -> Float {
+    return EngineTime.ToFloat(GameInstance.GetSimTime(this.GetGameInstance()));
+  }
+
+  public static func Stage(h: EPreventionHeatStage) -> Int32 {
+    switch h {
+      case EPreventionHeatStage.Heat_1:
+        return 1;
+      case EPreventionHeatStage.Heat_2:
+        return 2;
+      case EPreventionHeatStage.Heat_3:
+        return 3;
+      case EPreventionHeatStage.Heat_4:
+        return 4;
+      case EPreventionHeatStage.Heat_5:
+        return 5;
+      default:
+        return 0;
+    }
+  }
+
+  private func Prevention() -> ref<PreventionSystem> {
+    return GameInstance.GetScriptableSystemsContainer(this.GetGameInstance()).Get(n"PreventionSystem") as PreventionSystem;
+  }
+
+  // The mod acts only when switched on and no quest is steering the police.
+  public func Active(ps: ref<PreventionSystem>) -> Bool {
+    return this.Config().enabled && IsDefined(ps) && ps.NCPDH_QuestFree();
+  }
+
+  // ================================================================ crime filter
+  // Called with the score the base game just added for a hit on an NPC. Returns what it should
+  // add instead. Never more than the base game, except the ramp multiplier below 3 stars.
+  public func AdjustNPCScore(ps: ref<PreventionSystem>, request: ref<PreventionDamageRequest>, delta: Float) -> Float {
+    let cfg = this.Config();
+    let stage = NCPDHSystem.Stage(ps.GetHeatStage());
+    let now = this.Now();
+    let explosive = Equals(request.attackType, gamedataAttackType.Explosion) || Equals(request.attackType, gamedataAttackType.PressureWave);
+
+    if !request.isTargetPrevention {
+      // ---- civilians (and anything else the base game reports that is not police)
+      if stage == 0 {
+        if !cfg.pettyFilter {
+          return delta;
+        }
+        if explosive {
+          // Explosions in public are not petty crime.
+          this.m_lastSeriousTime = now;
+          this.Log(s"Civilian hit by an explosion: counts (\(delta))");
+          return delta;
+        }
+        if request.isTargetKilled {
+          ArrayPush(this.m_civKillTimes, now);
+          this.m_civKillTimes = this.Pruned(this.m_civKillTimes, now, cfg.pettyWindow);
+          if ArraySize(this.m_civKillTimes) >= cfg.pettyKills {
+            this.Log(s"Civilian kill \(ArraySize(this.m_civKillTimes)) of \(cfg.pettyKills) within \(cfg.pettyWindow)s: threshold tripped, police respond");
+            ArrayClear(this.m_civKillTimes);
+            this.m_lastSeriousTime = now;
+            this.m_pendingRaise = true;
+            return delta;
+          }
+          this.m_lastPettyTime = now;
+          this.Log(s"Civilian kill \(ArraySize(this.m_civKillTimes)) of \(cfg.pettyKills): petty, ignored");
+          return 0.0;
+        }
+        this.m_lastPettyTime = now;
+        this.Log(s"Civilian hurt: petty, ignored (base game wanted \(delta))");
+        return 0.0;
+      }
+      if stage < 3 {
+        return delta * cfg.rampMultiplier;
+      }
+      return this.PlateauScore(delta);
+    }
+
+    // ---- police
+    this.m_lastSeriousTime = now;
+    if request.isTargetKilled {
+      this.m_copKillsThisChase += 1;
+    }
+    if stage < 3 {
+      return delta * cfg.rampMultiplier;
+    }
+    if !cfg.plateau {
+      return delta;
+    }
+    if request.isTargetKilled {
+      this.m_copKillsTowardEvent += 1;
+      if this.m_copKillsTowardEvent >= cfg.copKillsPerEvent {
+        this.m_copKillsTowardEvent = 0;
+        this.AddEscalation(s"\(cfg.copKillsPerEvent) police killed");
+      }
+    }
+    if explosive && cfg.explosionEvents && now - this.m_lastExplosionEvent > 3.0 {
+      // One grenade hitting five officers is one major crime, not five.
+      this.m_lastExplosionEvent = now;
+      this.AddEscalation("explosion on police");
+    }
+    if this.m_perimeterOn {
+      NCPDHVoice.Play(this, NCPDHVoiceEvent.AttackInRing, null);
+    }
+    return this.PlateauScore(delta);
+  }
+
+  // Score for vehicle damage: only the plateau applies.
+  public func AdjustVehicleScore(ps: ref<PreventionSystem>, delta: Float) -> Float {
+    if NCPDHSystem.Stage(ps.GetHeatStage()) >= 3 {
+      return this.PlateauScore(delta);
+    }
+    return delta;
+  }
+
+  private func PlateauScore(delta: Float) -> Float {
+    let cfg = this.Config();
+    if !cfg.plateau {
+      return delta;
+    }
+    return delta * Cast<Float>(cfg.plateauLeak) / 100.0;
+  }
+
+  // True once when the filter wants the current hit to raise the heat by one star.
+  public func TakePendingRaise() -> Bool {
+    let r = this.m_pendingRaise;
+    this.m_pendingRaise = false;
+    return r;
+  }
+
+  // A witness call about a crime the filter just ignored does not start a chase.
+  public func ShouldIgnoreWitness() -> Bool {
+    let cfg = this.Config();
+    if !cfg.pettyFilter || !cfg.pettyWitness {
+      return false;
+    }
+    let now = this.Now();
+    if now - this.m_lastPettyTime > cfg.pettyWindow {
+      return false;
+    }
+    return this.m_lastSeriousTime < this.m_lastPettyTime;
+  }
+
+  // A copy of the list without entries older than the window.
+  private func Pruned(times: array<Float>, now: Float, window: Float) -> array<Float> {
+    let kept: array<Float>;
+    let i = 0;
+    while i < ArraySize(times) {
+      if now - times[i] <= window {
+        ArrayPush(kept, times[i]);
+      }
+      i += 1;
+    }
+    return kept;
+  }
+
+  // ================================================================ escalation
+  // One major crime at 3 or 4 stars. Enough of them inside the window raise the heat one star.
+  public func AddEscalation(reason: String) -> Void {
+    let cfg = this.Config();
+    let ps = this.Prevention();
+    if !cfg.plateau || !IsDefined(ps) {
+      return;
+    }
+    let stage = NCPDHSystem.Stage(ps.GetHeatStage());
+    if stage < 3 || stage >= 5 {
+      return;
+    }
+    let now = this.Now();
+    ArrayPush(this.m_escalationTimes, now);
+    this.m_escalationTimes = this.Pruned(this.m_escalationTimes, now, cfg.escalationWindow);
+    let need = stage == 3 ? cfg.eventsFor4 : cfg.eventsFor5;
+    this.Log(s"Major crime (\(reason)): \(ArraySize(this.m_escalationTimes)) of \(need) toward \(stage + 1) stars");
+    if ArraySize(this.m_escalationTimes) >= need {
+      ArrayClear(this.m_escalationTimes);
+      this.m_pendingRaise = true;
+    }
+  }
+
+  // A police vehicle exploded. Called from the base game's explosion notice.
+  public func OnPoliceVehicleDestroyed(ps: ref<PreventionSystem>) -> Void {
+    if !this.Active(ps) || !this.Config().vehicleEvents || !ps.IsChasingPlayer() {
+      return;
+    }
+    this.AddEscalation("police vehicle destroyed");
+    if this.TakePendingRaise() {
+      ps.NCPDH_RaiseOneStar("NCPDH_PoliceVehicleDestroyed");
+    }
+  }
+
+  // ================================================================ heat changes
+  public func OnHeatChanged(ps: ref<PreventionSystem>, prev: Int32, cur: Int32) -> Void {
+    this.Log(s"Heat \(prev) -> \(cur)");
+    ArrayClear(this.m_escalationTimes);
+    this.m_copKillsTowardEvent = 0;
+    if cur == 0 {
+      if prev > 0 && this.Config().enabled {
+        NCPDHVoice.Play(this, NCPDHVoiceEvent.GiveUp, null);
+      }
+      this.Dissolve("heat gone");
+      ArrayClear(this.m_units);
+      this.m_copKillsThisChase = 0;
+      this.m_brokenAt = -10000.0;
+      return;
+    }
+    if cur == 5 {
+      this.m_eliteAnnounced = false;
+    }
+    if cur >= 3 {
+      this.EnsureTicking();
+    }
+  }
+
+  // ================================================================ perimeter
+  public func IsHoldingPerimeter() -> Bool {
+    let cfg = this.Config();
+    return this.m_perimeterOn && cfg.enabled && cfg.perimeter;
+  }
+
+  public func EnsureTicking() -> Void {
+    if this.m_ticking {
+      return;
+    }
+    this.m_lastTickTime = this.Now();
+    this.ScheduleTick(0.5);
+  }
+
+  private func ScheduleTick(delay: Float) -> Void {
+    this.m_tickToken += 1;
+    let cb = new NCPDHTickCallback();
+    cb.sys = this;
+    cb.token = this.m_tickToken;
+    GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(cb, delay, false);
+    this.m_ticking = true;
+  }
+
+  public func OnTick(token: Int32) -> Void {
+    if token != this.m_tickToken {
+      return;
+    }
+    this.m_ticking = false;
+    let game = this.GetGameInstance();
+    let cfg = this.Config();
+    let ps = this.Prevention();
+    if !IsDefined(ps) {
+      return;
+    }
+    let stage = NCPDHSystem.Stage(ps.GetHeatStage());
+    if stage < 3 {
+      this.Dissolve("below 3 stars");
+      return;
+    }
+    let now = this.Now();
+    let dt = ClampF(now - this.m_lastTickTime, 0.0, 2.0);
+    this.m_lastTickTime = now;
+
+    let player = GetPlayer(game);
+    if !cfg.perimeter || !this.Active(ps) || !ps.CanPreventionReactToInput() || !IsDefined(player) {
+      this.Dissolve("switched off or quest controls the police");
+      this.ScheduleTick(2.0);
+      return;
+    }
+    if ps.IsPlayerMounted() {
+      this.Dissolve("V is in a vehicle");
+      this.ScheduleTick(1.0);
+      return;
+    }
+
+    let registry = PreventionSystem.GetAgentRegistry(game);
+    let vPos = player.GetWorldPosition();
+
+    if !this.m_perimeterOn {
+      if now - this.m_brokenAt >= cfg.reformDelay && IsDefined(registry) && registry.IsPoliceInCombatWithPalyer() {
+        this.Form(vPos, now);
+      }
+    } else {
+      // The ring re-centers on V, but no faster than officers on foot can follow.
+      let dx = vPos.X - this.m_anchor.X;
+      let dy = vPos.Y - this.m_anchor.Y;
+      let d = SqrtF(dx * dx + dy * dy);
+      if d > cfg.radius + cfg.breakMargin {
+        this.Breakout(registry, vPos, now);
+        this.ScheduleTick(1.0);
+        return;
+      }
+      let step = cfg.followSpeed * dt;
+      if d <= step || d < 0.01 {
+        this.m_anchor = vPos;
+      } else {
+        this.m_anchor = new Vector4(this.m_anchor.X + dx / d * step, this.m_anchor.Y + dy / d * step, vPos.Z, 1.0);
+      }
+    }
+
+    if this.m_perimeterOn && IsDefined(registry) {
+      if cfg.carPerimeter {
+        this.CommandVehicles(registry, now);
+      }
+      let valid = this.CommandUnits(registry, stage, now);
+      if valid > 0 {
+        this.m_lastValidUnitTime = now;
+      } else {
+        if now - this.m_lastValidUnitTime > 10.0 {
+          this.Dissolve("no officers left on the ring");
+        }
+      }
+      if valid > 0 && now - this.m_lastStandoffLine > 25.0 {
+        this.m_lastStandoffLine = now;
+        NCPDHVoice.Play(this, NCPDHVoiceEvent.Standoff, null);
+      }
+    }
+    this.ScheduleTick(1.0);
+  }
+
+  private func Form(vPos: Vector4, now: Float) -> Void {
+    this.m_perimeterOn = true;
+    this.m_anchor = vPos;
+    this.m_lastValidUnitTime = now;
+    this.m_lastStandoffLine = now;
+    this.Log(s"Perimeter formed, radius \(this.Config().radius) m. Heat frozen.");
+    NCPDHVoice.Play(this, NCPDHVoiceEvent.PerimeterSet, null);
+    let cfg = this.Config();
+    let ps = this.Prevention();
+    if IsDefined(ps) && cfg.roadblocks > 0 {
+      let placed = 0;
+      let i = 0;
+      while i < cfg.roadblocks {
+        if ps.NCPDH_RequestRoadblock(cfg.radius, cfg.radius + 25.0) {
+          placed += 1;
+        }
+        i += 1;
+      }
+      this.Log(s"Roadblocks requested at ring distance: \(placed) of \(cfg.roadblocks)");
+    }
+  }
+
+  // Gives every officer on foot an order: hold the ring, or move to it. Returns how many are on it.
+  private func CommandUnits(registry: ref<PoliceAgentRegistry>, stage: Int32, now: Float) -> Int32 {
+    let agents = registry.GetNPCList();
+    let valid = 0;
+    let i = 0;
+    while i < ArraySize(agents) {
+      if this.CommandOne(agents[i], stage, now) {
+        valid += 1;
+      }
+      i += 1;
+    }
+    return valid;
+  }
+
+  // One officer. Returns true if he is part of the ring.
+  private func CommandOne(agent: ref<NPCAgent>, stage: Int32, now: Float) -> Bool {
+    let cfg = this.Config();
+    let game = this.GetGameInstance();
+    let tolerance = 4.0;
+    if !IsDefined(agent) || agent.isQuestNPC || agent.markedToBeDespawned {
+      return false;
+    }
+    let unit = agent.unit;
+    if !IsDefined(unit) || !unit.IsActive() || VehicleComponent.IsMountedToVehicle(game, unit) {
+      return false;
+    }
+    let rec = this.GetUnit(unit.GetEntityID());
+    if rec.mode == 3 {
+      return false;
+    }
+    if cfg.maxTacEnters && PreventionSystem.IsPreventionMaxTac(game, unit) {
+      // MaxTac is not held back. Regular officers keep the ring while MaxTac goes in.
+      if IsDefined(rec.cmd) {
+        AIComponent.CancelCommand(unit, rec.cmd);
+        rec.cmd = null;
+        rec.mode = 0;
+      }
+      if stage >= 5 && !this.m_eliteAnnounced {
+        this.m_eliteAnnounced = true;
+        this.Log("MaxTac entering the perimeter");
+        NCPDHVoice.Play(this, NCPDHVoiceEvent.EliteEnter, null);
+      }
+      return false;
+    }
+
+    let pos = unit.GetWorldPosition();
+    let dx = pos.X - this.m_anchor.X;
+    let dy = pos.Y - this.m_anchor.Y;
+    let d = SqrtF(dx * dx + dy * dy);
+    if d < 0.5 {
+      let a = RandRangeF(0.0, 6.2831);
+      dx = CosF(a);
+      dy = SinF(a);
+      d = 1.0;
+    }
+    let ring = new Vector4(this.m_anchor.X + dx / d * cfg.radius, this.m_anchor.Y + dy / d * cfg.radius, pos.Z, 1.0);
+    let gap = d - cfg.radius;
+
+    // Roadblock crews already hold behind their own cars: leave them unless they wander inside.
+    let roadblockCrew = Equals(agent.spawnedType, DynamicVehicleType.RoadBlockade) || Equals(agent.spawnedType, DynamicVehicleType.RoadBlockadeWithAV);
+
+    if cfg.useCover {
+      if !rec.presetSent {
+        rec.origPreset = NCPDHSystem.CurrentPreset(unit);
+        NCPDHSystem.SendPreset(unit, EAICombatPreset.IsCautious);
+        rec.presetSent = true;
+      }
+      if gap < -tolerance {
+        // Inside the ring: back out to it.
+        let moved = Vector4.Distance(rec.target, ring) > tolerance;
+        if rec.mode != 1 || moved || now - rec.sentAt > 4.0 {
+          this.SendMove(unit, rec, ring, moveMovementType.Run, now);
+        }
+      } else {
+        if gap > cfg.coverBand && !roadblockCrew {
+          // Too far out: close in to the ring.
+          let moved = Vector4.Distance(rec.target, ring) > tolerance;
+          if rec.mode != 1 || moved || now - rec.sentAt > 4.0 {
+            this.SendMove(unit, rec, ring, gap > 15.0 ? moveMovementType.Sprint : moveMovementType.Run, now);
+          }
+        } else {
+          // In the band: free to pick his own cover and fight from it.
+          if rec.mode == 1 && gap >= 0.0 && IsDefined(rec.cmd) {
+            AIComponent.CancelCommand(unit, rec.cmd);
+            rec.cmd = null;
+          }
+          if rec.mode != 1 || gap >= 0.0 {
+            rec.mode = 4;
+          }
+        }
+      }
+      return true;
+    }
+
+    if roadblockCrew && gap >= -tolerance {
+      return true;
+    }
+    if AbsF(gap) <= tolerance {
+      if rec.mode != 2 || now - rec.sentAt > 6.0 {
+        this.SendHold(unit, rec, now);
+      }
+    } else {
+      let moved = Vector4.Distance(rec.target, ring) > tolerance;
+      if rec.mode != 1 || moved || now - rec.sentAt > 4.0 {
+        this.SendMove(unit, rec, ring, gap > 15.0 ? moveMovementType.Sprint : moveMovementType.Run, now);
+      }
+    }
+    return true;
+  }
+
+  // ---------------------------------------------------------------- combat style
+  public static func CurrentPreset(unit: wref<ScriptedPuppet>) -> EAICombatPreset {
+    let stats = GameInstance.GetStatsSystem(unit.GetGame());
+    let id = Cast<StatsObjectID>(unit.GetEntityID());
+    if stats.GetStatValue(id, gamedataStatType.IsReckless) > 0.0 {
+      return EAICombatPreset.IsReckless;
+    }
+    if stats.GetStatValue(id, gamedataStatType.IsAggressive) > 0.0 {
+      return EAICombatPreset.IsAggressive;
+    }
+    if stats.GetStatValue(id, gamedataStatType.IsBalanced) > 0.0 {
+      return EAICombatPreset.IsBalanced;
+    }
+    if stats.GetStatValue(id, gamedataStatType.IsDefensive) > 0.0 {
+      return EAICombatPreset.IsDefensive;
+    }
+    if stats.GetStatValue(id, gamedataStatType.IsCautious) > 0.0 {
+      return EAICombatPreset.IsCautious;
+    }
+    return EAICombatPreset.None;
+  }
+
+  public static func SendPreset(unit: wref<ScriptedPuppet>, preset: EAICombatPreset) -> Void {
+    let cmd = new AISetCombatPresetCommand();
+    cmd.combatPreset = preset;
+    AIComponent.SendCommand(unit, cmd);
+  }
+
+  // ---------------------------------------------------------------- police cars
+  // Cars driving in are sent to a spot on the ring and their crew get out there.
+  private func CommandVehicles(registry: ref<PoliceAgentRegistry>, now: Float) -> Void {
+    let cfg = this.Config();
+    let game = this.GetGameInstance();
+    let list = registry.GetVehicleList();
+    let i = 0;
+    while i < ArraySize(list) {
+      let agent = list[i];
+      i += 1;
+      if IsDefined(agent) && IsDefined(agent.unit) {
+        let veh = agent.unit;
+        let wheeled = veh as WheeledObject;
+        let isRoadblock = Equals(agent.spawnedType, DynamicVehicleType.RoadBlockade) || Equals(agent.spawnedType, DynamicVehicleType.RoadBlockadeWithAV);
+        if IsDefined(wheeled) && !isRoadblock && !veh.IsDestroyed() && veh.HasPassengers() {
+          let rec = this.GetVehicle(veh.GetEntityID());
+          if rec.mode != 2 {
+            let pos = veh.GetWorldPosition();
+            let dx = pos.X - this.m_anchor.X;
+            let dy = pos.Y - this.m_anchor.Y;
+            let d = MaxF(SqrtF(dx * dx + dy * dy), 0.1);
+            if d <= cfg.radius + 8.0 || (rec.mode == 1 && now - rec.sentAt > 15.0) {
+              // At the ring (or inside it already, or stuck): stop here and get out.
+              VehicleComponent.QueueEventToAllPassengers(game, veh, AIEvents.ExitVehicleEvent());
+              rec.mode = 2;
+              rec.sentAt = now;
+              this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) parked \(d) m out, crew getting out");
+            } else {
+              if rec.mode == 0 && d <= cfg.radius + 70.0 {
+                let spot = new Vector4(this.m_anchor.X + dx / d * (cfg.radius + 4.0), this.m_anchor.Y + dy / d * (cfg.radius + 4.0), pos.Z, 1.0);
+                let cmd = new AIVehicleDriveToPointAutonomousCommand();
+                cmd.targetPosition = Vector4.Vector4To3(spot);
+                cmd.minimumDistanceToTarget = 4.0;
+                cmd.maxSpeed = 14.0;
+                cmd.minSpeed = 3.0;
+                cmd.clearTrafficOnPath = true;
+                cmd.forcedStartSpeed = -1.0;
+                cmd.driveDownTheRoadIndefinitely = false;
+                let evt = new AICommandEvent();
+                evt.command = cmd;
+                veh.QueueEvent(evt);
+                rec.mode = 1;
+                rec.sentAt = now;
+                this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) told to park on the ring (\(d) m out)");
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private func GetVehicle(id: EntityID) -> ref<NCPDHVehicle> {
+    let i = 0;
+    while i < ArraySize(this.m_vehicles) {
+      if Equals(this.m_vehicles[i].id, id) {
+        return this.m_vehicles[i];
+      }
+      i += 1;
+    }
+    let rec = new NCPDHVehicle();
+    rec.id = id;
+    ArrayPush(this.m_vehicles, rec);
+    return rec;
+  }
+
+  private func SendHold(unit: wref<ScriptedPuppet>, rec: ref<NCPDHUnit>, now: Float) -> Void {
+    if IsDefined(rec.cmd) {
+      AIComponent.CancelCommand(unit, rec.cmd);
+    }
+    let cmd = new AIHoldPositionCommand();
+    cmd.duration = 8.0;
+    cmd.ignoreInCombat = false;
+    cmd.removeAfterCombat = true;
+    cmd.alwaysUseStealth = false;
+    AIComponent.SendCommand(unit, cmd);
+    rec.cmd = cmd;
+    rec.mode = 2;
+    rec.sentAt = now;
+  }
+
+  private func SendMove(unit: wref<ScriptedPuppet>, rec: ref<NCPDHUnit>, target: Vector4, speed: moveMovementType, now: Float) -> Void {
+    if IsDefined(rec.cmd) {
+      AIComponent.CancelCommand(unit, rec.cmd);
+    }
+    let cmd = new AIMoveToCommand();
+    let wp: WorldPosition;
+    WorldPosition.SetVector4(wp, target);
+    AIPositionSpec.SetWorldPosition(cmd.movementTarget, wp);
+    cmd.movementType = speed;
+    cmd.desiredDistanceFromTarget = 1.5;
+    cmd.finishWhenDestinationReached = true;
+    cmd.ignoreNavigation = false;
+    cmd.useStart = true;
+    cmd.useStop = true;
+    cmd.rotateEntityTowardsFacingTarget = false;
+    cmd.alwaysUseStealth = false;
+    cmd.removeAfterCombat = true;
+    cmd.ignoreInCombat = false;
+    AIComponent.SendCommand(unit, cmd);
+    rec.cmd = cmd;
+    rec.mode = 1;
+    rec.sentAt = now;
+    rec.target = target;
+  }
+
+  private func GetUnit(id: EntityID) -> ref<NCPDHUnit> {
+    let i = 0;
+    while i < ArraySize(this.m_units) {
+      if Equals(this.m_units[i].id, id) {
+        return this.m_units[i];
+      }
+      i += 1;
+    }
+    let rec = new NCPDHUnit();
+    rec.id = id;
+    ArrayPush(this.m_units, rec);
+    return rec;
+  }
+
+  // V got clear of the ring. Low-rank officers may run, then everyone else follows base-game rules.
+  private func Breakout(registry: ref<PoliceAgentRegistry>, vPos: Vector4, now: Float) -> Void {
+    let cfg = this.Config();
+    this.Log("V broke the perimeter. Heat unfrozen.");
+    NCPDHVoice.Play(this, NCPDHVoiceEvent.BreakOut, null);
+    if cfg.flee && IsDefined(registry) {
+      let chance = Cast<Float>(Min(cfg.fleeMax, this.m_copKillsThisChase * cfg.fleePerKill)) / 100.0;
+      this.Log(s"Flee chance for low-rank officers: \(chance * 100.0)% (\(this.m_copKillsThisChase) police killed this chase)");
+      if chance > 0.0 {
+        let agents = registry.GetNPCList();
+        let i = 0;
+        while i < ArraySize(agents) {
+          let agent = agents[i];
+          i += 1;
+          if IsDefined(agent) && !agent.isQuestNPC && IsDefined(agent.unit) && agent.unit.IsActive() {
+            let rec = this.GetUnit(agent.unit.GetEntityID());
+            if (rec.mode == 1 || rec.mode == 2 || rec.mode == 4) && NCPDHSystem.IsLowRank(agent.unit) && RandF() < chance {
+              this.Flee(agent.unit, rec, vPos, now);
+            }
+          }
+        }
+      }
+    }
+    this.Dissolve("breakout");
+    this.m_brokenAt = now;
+  }
+
+  public static func IsLowRank(unit: wref<ScriptedPuppet>) -> Bool {
+    let record = TweakDBInterface.GetCharacterRecord(unit.GetRecordID());
+    if !IsDefined(record) || !IsDefined(record.Rarity()) {
+      return false;
+    }
+    let r = record.Rarity().Type();
+    return Equals(r, gamedataNPCRarity.Trash) || Equals(r, gamedataNPCRarity.Weak) || Equals(r, gamedataNPCRarity.Normal);
+  }
+
+  private func Flee(unit: wref<ScriptedPuppet>, rec: ref<NCPDHUnit>, vPos: Vector4, now: Float) -> Void {
+    let game = this.GetGameInstance();
+    let player = GetPlayer(game);
+    if IsDefined(rec.cmd) {
+      AIComponent.CancelCommand(unit, rec.cmd);
+      rec.cmd = null;
+    }
+    rec.mode = 3;
+    // Drop V as a target, the same way the base game does when the stars run out.
+    let tracker = unit.GetTargetTrackerComponent();
+    if IsDefined(tracker) && IsDefined(player) {
+      tracker.RemoveThreat(tracker.MapThreat(player));
+      tracker.ResetRecentlyDroppedThreat();
+    }
+    if IsDefined(player) {
+      GameObject.ChangeAttitudeToNeutral(unit, player);
+    }
+    NPCPuppet.ChangeHighLevelState(unit, gamedataNPCHighLevelState.Relaxed);
+    // Run straight away from V.
+    let pos = unit.GetWorldPosition();
+    let dx = pos.X - vPos.X;
+    let dy = pos.Y - vPos.Y;
+    let d = MaxF(SqrtF(dx * dx + dy * dy), 0.1);
+    let away = new Vector4(pos.X + dx / d * 100.0, pos.Y + dy / d * 100.0, pos.Z, 1.0);
+    let cmd = new AIMoveToCommand();
+    let wp: WorldPosition;
+    WorldPosition.SetVector4(wp, away);
+    AIPositionSpec.SetWorldPosition(cmd.movementTarget, wp);
+    cmd.movementType = moveMovementType.Sprint;
+    cmd.desiredDistanceFromTarget = 3.0;
+    cmd.finishWhenDestinationReached = true;
+    cmd.ignoreNavigation = false;
+    cmd.useStart = true;
+    cmd.useStop = true;
+    cmd.alwaysUseStealth = false;
+    cmd.removeAfterCombat = false;
+    cmd.ignoreInCombat = false;
+    AIComponent.SendCommand(unit, cmd);
+    rec.cmd = cmd;
+    rec.sentAt = now;
+    this.Log(s"Officer \(EntityID.ToDebugString(unit.GetEntityID())) flees");
+    NCPDHVoice.Play(this, NCPDHVoiceEvent.Flee, unit);
+    let cb = new NCPDHDespawnCallback();
+    cb.sys = this;
+    cb.id = unit.GetEntityID();
+    GameInstance.GetDelaySystem(game).DelayCallback(cb, 20.0, false);
+  }
+
+  // A fled officer who got away is removed, so he does not rejoin the chase.
+  public func DespawnFled(id: EntityID) -> Void {
+    let game = this.GetGameInstance();
+    let unit = GameInstance.FindEntityByID(game, id) as ScriptedPuppet;
+    let player = GetPlayer(game);
+    if !IsDefined(unit) || !unit.IsActive() || !IsDefined(player) {
+      return;
+    }
+    if Vector4.Distance(unit.GetWorldPosition(), player.GetWorldPosition()) > 40.0 {
+      this.Log(s"Fled officer \(EntityID.ToDebugString(id)) is gone");
+      GameInstance.GetPreventionSpawnSystem(game).RequestDespawn(id);
+    }
+  }
+
+  // Ends the perimeter and takes back every order it gave, except to officers who fled.
+  public func Dissolve(reason: String) -> Void {
+    if !this.m_perimeterOn {
+      return;
+    }
+    this.m_perimeterOn = false;
+    let game = this.GetGameInstance();
+    let i = ArraySize(this.m_units) - 1;
+    while i >= 0 {
+      let rec = this.m_units[i];
+      if rec.mode != 3 {
+        let unit = GameInstance.FindEntityByID(game, rec.id) as ScriptedPuppet;
+        if IsDefined(unit) && IsDefined(rec.cmd) {
+          AIComponent.CancelCommand(unit, rec.cmd);
+        }
+        if IsDefined(unit) && rec.presetSent && unit.IsActive() {
+          NCPDHSystem.SendPreset(unit, rec.origPreset);
+        }
+        ArrayErase(this.m_units, i);
+      }
+      i -= 1;
+    }
+    ArrayClear(this.m_vehicles);
+    this.Log(s"Perimeter ended: \(reason)");
+  }
+
+  // ================================================================ voice support
+  public func VoiceLastTime(e: NCPDHVoiceEvent) -> Float {
+    let i = NCPDHVoice.Index(e);
+    if i < 0 || i >= ArraySize(this.m_voiceLast) {
+      return -10000.0;
+    }
+    return this.m_voiceLast[i];
+  }
+
+  public func SetVoiceLastTime(e: NCPDHVoiceEvent, t: Float) -> Void {
+    let i = NCPDHVoice.Index(e);
+    if i >= 0 && i < ArraySize(this.m_voiceLast) {
+      this.m_voiceLast[i] = t;
+    }
+  }
+
+  // ================================================================ testing
+  public func Report() -> Void {
+    let ps = this.Prevention();
+    let stage = IsDefined(ps) ? NCPDHSystem.Stage(ps.GetHeatStage()) : -1;
+    ModLog(n"ThreatAssessment", s"Report: heat \(stage), active \(this.Active(ps)), perimeter \(this.m_perimeterOn), officers tracked \(ArraySize(this.m_units)), police killed this chase \(this.m_copKillsThisChase), major crimes counted \(ArraySize(this.m_escalationTimes)), recent civilian kills \(ArraySize(this.m_civKillTimes))");
+  }
+}
