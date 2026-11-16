@@ -90,11 +90,26 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Search")
   @runtimeProperty("ModSettings.displayName", "Shortest search (in-game minutes)")
-  @runtimeProperty("ModSettings.description", "Measured on the game clock. At the normal clock speed one in-game minute is about 7.5 real seconds, so 5 in-game minutes is about 40 real seconds.")
+  @runtimeProperty("ModSettings.description", "Measured on the game clock, so it follows any mod that changes how fast time passes. At the normal clock speed one in-game minute is about 7.5 real seconds. Used when the real-time option below is off.")
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "1")
   @runtimeProperty("ModSettings.max", "60")
   public let searchMinutes: Float = 5.0;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Search")
+  @runtimeProperty("ModSettings.displayName", "Count search time in real minutes")
+  @runtimeProperty("ModSettings.description", "Use real time instead of the game clock for the shortest search.")
+  public let searchRealTime: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Search")
+  @runtimeProperty("ModSettings.displayName", "Shortest search (real minutes)")
+  @runtimeProperty("ModSettings.description", "Used when the real-time option above is on.")
+  @runtimeProperty("ModSettings.step", "0.5")
+  @runtimeProperty("ModSettings.min", "0.5")
+  @runtimeProperty("ModSettings.max", "15.0")
+  public let searchRealMinutes: Float = 3.0;
 
   // ------------------------------------------------------------------ Response size
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -210,7 +225,7 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "3-star perimeter")
   @runtimeProperty("ModSettings.displayName", "Police set a perimeter at 3 stars")
-  @runtimeProperty("ModSettings.description", "From 3 stars, officers on foot hold a ring around you and shoot from it instead of rushing in. Heat is frozen until you break out and run.")
+  @runtimeProperty("ModSettings.description", "From 3 stars, officers hold a ring around you and shoot from it instead of rushing in. While they search, the ring sits where they last saw you. Once they engage, heat is frozen until you break out and run.")
   public let perimeter: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")

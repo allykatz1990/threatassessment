@@ -84,6 +84,7 @@ public class NCPDHSystem extends ScriptableSystem {
   private let m_ticking: Bool;
   private let m_lastTickTime: Float;
   private let m_perimeterOn: Bool;
+  private let m_engaged: Bool;
   private let m_anchor: Vector4;
   private let m_brokenAt: Float;
   private let m_lastValidUnitTime: Float;
@@ -94,6 +95,7 @@ public class NCPDHSystem extends ScriptableSystem {
 
   // search: game-clock time the police lost V, or below zero while they can see V
   private let m_searchStart: Float;
+  private let m_searchStartReal: Float;
 
   // voice: last time each NCPDHVoiceEvent played
   private let m_voiceLast: array<Float>;
@@ -349,6 +351,7 @@ public class NCPDHSystem extends ScriptableSystem {
   public func NoteSearchStart() -> Void {
     if this.m_searchStart < 0.0 {
       this.m_searchStart = this.GameSeconds();
+      this.m_searchStartReal = this.Now();
       this.Log("Police lost sight of V: search started");
     }
   }
@@ -359,21 +362,26 @@ public class NCPDHSystem extends ScriptableSystem {
   }
 
   // In-game seconds the search must still run before the stars may start to fade.
+  // Seconds the search must still run (in-game or real seconds, by the setting).
   public func SearchTimeLeft() -> Float {
     let cfg = this.Config();
     if !cfg.longSearch {
       return 0.0;
     }
     if this.m_searchStart < 0.0 {
-      this.m_searchStart = this.GameSeconds();
+      this.NoteSearchStart();
+    }
+    if cfg.searchRealTime {
+      return cfg.searchRealMinutes * 60.0 - (this.Now() - this.m_searchStartReal);
     }
     return cfg.searchMinutes * 60.0 - (this.GameSeconds() - this.m_searchStart);
   }
 
   // ================================================================ perimeter
+  // Heat freeze: only once officers have engaged V and while some are actually on the ring.
   public func IsHoldingPerimeter() -> Bool {
     let cfg = this.Config();
-    return this.m_perimeterOn && cfg.enabled && cfg.perimeter;
+    return this.m_perimeterOn && this.m_engaged && cfg.enabled && cfg.perimeter && this.Now() - this.m_lastValidUnitTime < 10.0;
   }
 
   public func EnsureTicking() -> Void {
@@ -428,25 +436,47 @@ public class NCPDHSystem extends ScriptableSystem {
     let registry = PreventionSystem.GetAgentRegistry(game);
     let vPos = player.GetWorldPosition();
 
+    // Engaged: officers are fighting V right now. Otherwise they are searching, and the ring is
+    // set around the last place they saw V instead of where V really is.
+    let engaged = IsDefined(registry) && registry.IsPoliceInCombatWithPalyer();
+    let lkp = ps.GetLastKnownPlayerPosition();
+    if Vector4.IsXYZZero(lkp) {
+      lkp = vPos;
+    }
+
     if !this.m_perimeterOn {
-      if now - this.m_brokenAt >= cfg.reformDelay && IsDefined(registry) && registry.IsPoliceInCombatWithPalyer() {
-        this.Form(vPos, now);
+      // The ring goes up as soon as the heat reaches 3 stars, before the first units arrive.
+      if now - this.m_brokenAt >= cfg.reformDelay {
+        this.Form(engaged ? vPos : lkp, now);
       }
     } else {
-      // The ring re-centers on V, but no faster than officers on foot can follow.
-      let dx = vPos.X - this.m_anchor.X;
-      let dy = vPos.Y - this.m_anchor.Y;
+      if engaged && !this.m_engaged {
+        this.Log("Officers engaging V: heat frozen while V stays inside the ring");
+        let jx = vPos.X - this.m_anchor.X;
+        let jy = vPos.Y - this.m_anchor.Y;
+        if SqrtF(jx * jx + jy * jy) > cfg.radius {
+          // Spotted somewhere else: the ring moves to V.
+          this.m_anchor = vPos;
+        }
+      }
+      if engaged {
+        this.m_engaged = true;
+      }
+      let target = engaged ? vPos : lkp;
+      let dx = target.X - this.m_anchor.X;
+      let dy = target.Y - this.m_anchor.Y;
       let d = SqrtF(dx * dx + dy * dy);
-      if d > cfg.radius + cfg.breakMargin {
+      if engaged && d > cfg.radius + cfg.breakMargin {
         this.Breakout(registry, vPos, now);
         this.ScheduleTick(1.0);
         return;
       }
+      // The ring re-centers, but no faster than officers on foot can follow.
       let step = cfg.followSpeed * dt;
       if d <= step || d < 0.01 {
-        this.m_anchor = vPos;
+        this.m_anchor = target;
       } else {
-        this.m_anchor = new Vector4(this.m_anchor.X + dx / d * step, this.m_anchor.Y + dy / d * step, vPos.Z, 1.0);
+        this.m_anchor = new Vector4(this.m_anchor.X + dx / d * step, this.m_anchor.Y + dy / d * step, target.Z, 1.0);
       }
     }
 
@@ -457,10 +487,6 @@ public class NCPDHSystem extends ScriptableSystem {
       let valid = this.CommandUnits(registry, stage, now);
       if valid > 0 {
         this.m_lastValidUnitTime = now;
-      } else {
-        if now - this.m_lastValidUnitTime > 10.0 {
-          this.Dissolve("no officers left on the ring");
-        }
       }
       if valid > 0 && now - this.m_lastStandoffLine > 25.0 {
         this.m_lastStandoffLine = now;
@@ -472,10 +498,11 @@ public class NCPDHSystem extends ScriptableSystem {
 
   private func Form(vPos: Vector4, now: Float) -> Void {
     this.m_perimeterOn = true;
+    this.m_engaged = false;
     this.m_anchor = vPos;
     this.m_lastValidUnitTime = now;
     this.m_lastStandoffLine = now;
-    this.Log(s"Perimeter formed, radius \(this.Config().radius) m. Heat frozen.");
+    this.Log(s"Perimeter formed, radius \(this.Config().radius) m");
     NCPDHVoice.Play(this, NCPDHVoiceEvent.PerimeterSet, null);
   }
 

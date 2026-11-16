@@ -183,7 +183,8 @@ private final func OnPreventionSearchingStatusRequest(evt: ref<PreventionSearchi
     if left > 0.0 {
       this.CancelSearchingTimerRequest();
       this.m_searchingStatusDelayID = GameInstance.GetDelaySystem(this.GetGameInstance()).DelayScriptableSystemRequest(n"PreventionSystem", new PreventionSearchingStatusRequest(), 5.0);
-      sys.Log(s"Still searching: \(RoundF(left / 60.0)) in-game minutes left");
+      let clock = sys.Config().searchRealTime ? "real" : "in-game";
+      sys.Log(s"Still searching: \(RoundF(left)) \(clock) seconds left");
       return;
     }
   }
