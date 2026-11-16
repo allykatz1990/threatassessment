@@ -123,9 +123,10 @@ private final func TryUpdateStarState() -> Void {
     if NCPDHSystem.Stage(this.m_heatStage) >= 3 {
       sys.EnsureTicking();
     }
-    if (sys.IsHoldingPerimeter() || sys.CorpEngaged()) && !this.m_securityAreaResetCheck && IsDefined(this.m_player) {
+    if (sys.IsHoldingPerimeter() || sys.CorpEngaged()) && !sys.PlayerHidden() && !this.m_securityAreaResetCheck && IsDefined(this.m_player) {
       // Heat freeze: the police always know where V is while the ring holds, so the stars never
       // go grey or start to fade. Corporate squads fighting V count as the police seeing V.
+      // Never while V is cloaked: then the base game decides what the police can see.
       this.SetLastKnownPlayerPosition(this.m_player.GetWorldPosition());
       this.UpdateStarStateTo(EStarState.Active);
       return;

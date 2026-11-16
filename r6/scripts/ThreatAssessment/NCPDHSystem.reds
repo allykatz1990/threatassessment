@@ -333,7 +333,17 @@ public class NCPDHSystem extends ScriptableSystem {
   }
 
   public func CorpEngaged() -> Bool {
-    return IsDefined(this.m_corp) && this.m_corp.Engaged(this.GetGameInstance());
+    return !this.PlayerHidden() && IsDefined(this.m_corp) && this.m_corp.Engaged(this.GetGameInstance());
+  }
+
+  // Optical camo (or any cloak) is on: the mod never tells the police where V is.
+  public func PlayerHidden() -> Bool {
+    let player = GetPlayer(this.GetGameInstance());
+    if !IsDefined(player) {
+      return false;
+    }
+    return StatusEffectSystem.ObjectHasStatusEffectWithTag(player, n"CamoActiveOnPlayer")
+      || StatusEffectSystem.ObjectHasStatusEffectWithTag(player, n"Cloak");
   }
 
   // A corporate unit went down: it counts like a police kill (kill streak and major crimes).
@@ -520,7 +530,9 @@ public class NCPDHSystem extends ScriptableSystem {
 
     // Engaged: officers are fighting V right now. Otherwise they are searching, and the ring is
     // set around the last place they saw V instead of where V really is.
-    let engaged = (IsDefined(registry) && registry.IsPoliceInCombatWithPalyer()) || this.CorpEngaged();
+    // While V is cloaked the ring stays where V was last seen and never follows V.
+    let hidden = this.PlayerHidden();
+    let engaged = !hidden && ((IsDefined(registry) && registry.IsPoliceInCombatWithPalyer()) || this.CorpEngaged());
     let handedOver = this.HandedOver(ps, stage);
     if handedOver && IsDefined(registry) {
       if !this.m_handoverLogged {
@@ -815,7 +827,19 @@ public class NCPDHSystem extends ScriptableSystem {
         let isRoadblock = Equals(agent.spawnedType, DynamicVehicleType.RoadBlockade) || Equals(agent.spawnedType, DynamicVehicleType.RoadBlockadeWithAV);
         if IsDefined(wheeled) && !isRoadblock && !veh.IsDestroyed() && veh.HasPassengers() {
           let rec = this.GetVehicle(veh.GetEntityID());
-          if rec.mode != 2 {
+          if rec.mode == 2 {
+            // Already stopped (or released): nobody drives back inside the ring.
+            let p2 = veh.GetWorldPosition();
+            let ex = p2.X - this.m_anchor.X;
+            let ey = p2.Y - this.m_anchor.Y;
+            let d2 = SqrtF(ex * ex + ey * ey);
+            if d2 <= cfg.radius + 16.0 && AbsF(veh.GetCurrentSpeed()) > 2.0 && now - rec.sentAt > 3.0 {
+              VehicleComponent.QueueEventToAllPassengers(game, veh, AIEvents.ExitVehicleEvent());
+              rec.sentAt = now;
+              this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) drove at the ring (\(d2) m), crew told to get out");
+            }
+          }
+          if rec.mode != 2 && rec.mode != 3 {
             let pos = veh.GetWorldPosition();
             let dx = pos.X - this.m_anchor.X;
             let dy = pos.Y - this.m_anchor.Y;
