@@ -337,6 +337,7 @@ public class NCPDHSystem extends ScriptableSystem {
       this.m_copKillsThisChase = 0;
       this.m_brokenAt = -10000.0;
       this.m_searchStart = -1.0;
+      this.m_corp.Reset();      // the next chase may bring a different corporation
       if this.m_corp.HasUnits() {
         this.EnsureTicking();   // corporate squads still need to leave
       }

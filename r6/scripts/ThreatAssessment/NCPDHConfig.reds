@@ -335,7 +335,7 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate response")
   @runtimeProperty("ModSettings.displayName", "Corporate security in corporate districts")
-  @runtimeProperty("ModSettings.description", "In the districts set below, the corporation that owns the turf sends its own security squads alongside the police. They hold the perimeter like the police, and their elite units go in at the star level set under Who may enter the perimeter.")
+  @runtimeProperty("ModSettings.description", "In the districts set below, the corporation that owns the turf sends its own security alongside the police, one corporation per chase. They hold the perimeter like the police, and their elite units go in at the star level set under Who may enter the perimeter.")
   public let corpResponse: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -359,38 +359,38 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate response")
   @runtimeProperty("ModSettings.displayName", "Time between squads (seconds)")
-  @runtimeProperty("ModSettings.description", "How soon losses are replaced with a new squad.")
+  @runtimeProperty("ModSettings.description", "How often the corporation checks the numbers and sends more units to match the police.")
   @runtimeProperty("ModSettings.step", "5")
   @runtimeProperty("ModSettings.min", "10")
   @runtimeProperty("ModSettings.max", "300")
-  public let corpWaveDelay: Float = 40.0;
+  public let corpWaveDelay: Float = 20.0;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate response")
-  @runtimeProperty("ModSettings.displayName", "Corporate units at 3 stars")
-  @runtimeProperty("ModSettings.description", "How many corporate units are on the scene at once at 3 stars.")
-  @runtimeProperty("ModSettings.step", "1")
-  @runtimeProperty("ModSettings.min", "1")
-  @runtimeProperty("ModSettings.max", "16")
-  public let corpSquad3: Int32 = 4;
+  @runtimeProperty("ModSettings.displayName", "Corporate units per 100 police")
+  @runtimeProperty("ModSettings.description", "How many corporate units come for every 100 NCPD officers on the scene. 100 is one for one: 10 officers, 10 corporate soldiers.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "10")
+  @runtimeProperty("ModSettings.max", "300")
+  public let corpRatio: Int32 = 100;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate response")
-  @runtimeProperty("ModSettings.displayName", "Corporate units at 4 stars")
-  @runtimeProperty("ModSettings.description", "At 4 stars, heavier units join (Militech adds drones).")
+  @runtimeProperty("ModSettings.displayName", "Fewest corporate units")
+  @runtimeProperty("ModSettings.description", "The corporation always sends at least this many, even if few police are on the scene.")
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "1")
-  @runtimeProperty("ModSettings.max", "16")
-  public let corpSquad4: Int32 = 6;
+  @runtimeProperty("ModSettings.max", "20")
+  public let corpMin: Int32 = 4;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate response")
-  @runtimeProperty("ModSettings.displayName", "Corporate units at 5 stars")
-  @runtimeProperty("ModSettings.description", "At 5 stars, mostly elite units.")
+  @runtimeProperty("ModSettings.displayName", "Most corporate units at once")
+  @runtimeProperty("ModSettings.description", "A ceiling to protect performance.")
   @runtimeProperty("ModSettings.step", "1")
-  @runtimeProperty("ModSettings.min", "1")
-  @runtimeProperty("ModSettings.max", "16")
-  public let corpSquad5: Int32 = 8;
+  @runtimeProperty("ModSettings.min", "4")
+  @runtimeProperty("ModSettings.max", "40")
+  public let corpMax: Int32 = 24;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate response")
@@ -401,11 +401,11 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate response")
   @runtimeProperty("ModSettings.displayName", "NCPD in corporate districts (percent)")
-  @runtimeProperty("ModSettings.description", "Once corporate security responds, how many police still come, compared with the normal response for that star level. 0 leaves it to the corporation alone.")
+  @runtimeProperty("ModSettings.description", "Once corporate security responds, how many police still come, compared with the normal response for that star level. Corporate numbers follow the police, so lowering this lowers both.")
   @runtimeProperty("ModSettings.step", "10")
-  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.min", "10")
   @runtimeProperty("ModSettings.max", "100")
-  public let corpNcpdShare: Int32 = 50;
+  public let corpNcpdShare: Int32 = 100;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate response")

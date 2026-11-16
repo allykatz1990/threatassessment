@@ -32,8 +32,9 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
 - **Only the heavy hitters go in.** At 5 stars MaxTac and heavily armored units (Elite rank, heavy
   weapons) move inside the ring while regular officers keep holding it.
 - **Corporate jurisdictions.** In Corpo Plaza, Downtown, Arasaka Waterfront and North Oak, the
-  corporation that owns the turf sends its own security from 3 stars, alongside fewer NCPD: Arasaka,
-  Militech or Kang Tao, or a random one on shared ground. Heavier units at 4 stars (Militech brings
+  corporation that owns the turf sends its own security from 3 stars, matching the police one for
+  one: Arasaka, Militech or Kang Tao, or a random one on shared ground. Only one corporation answers
+  per chase. Heavier units at 4 stars (Militech brings
   drones), elites and a mech at 5. They hold the perimeter like the police, and their elites go in
   with MaxTac. Every district can be set to any corporation or to NCPD only.
 - **Officer voice lines.** Officers call out the perimeter, breakouts, fleeing, MaxTac arriving and

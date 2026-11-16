@@ -207,6 +207,8 @@ public class NCPDHCorp {
 
     // ---- waves
     if active && NotEquals(here, NCPDHCorpChoice.Off) {
+      // One corporation per engagement: chosen with the first wave and kept until the heat is gone,
+      // even if V runs into a district another corporation owns.
       if Equals(this.m_corp, NCPDHCorpChoice.Off) {
         this.m_corp = here;
         if Equals(here, NCPDHCorpChoice.Mixed) {
@@ -231,10 +233,13 @@ public class NCPDHCorp {
       } else {
         this.m_heldForGangs = false;
         if now >= this.m_firstWaveAt && now - this.m_lastWave >= cfg.corpWaveDelay {
-          let target = stage >= 5 ? cfg.corpSquad5 : (stage == 4 ? cfg.corpSquad4 : cfg.corpSquad3);
+          // Match the police on the scene: one corporate unit for every officer (setting).
+          let police = NCPDHCorp.PoliceOnScene(game);
+          let target = Clamp(police * cfg.corpRatio / 100, cfg.corpMin, cfg.corpMax);
           let alive = this.AliveCount(des);
           if alive < target {
-            this.SpawnWave(sys, anchor, stage, Min(target - alive, 4), now);
+            sys.Log(s"\(police) police on the scene, \(alive) \(NCPDHCorp.Name(this.m_corp)) units: sending more");
+            this.SpawnWave(sys, anchor, stage, Min(target - alive, 6), now);
             this.m_lastWave = now;
           }
         }
@@ -280,10 +285,26 @@ public class NCPDHCorp {
       }
       i -= 1;
     }
-    if !active && !this.HasUnits() {
-      this.Reset();
-    }
     return valid;
+  }
+
+  // Active NCPD officers registered in the chase (MaxTac not counted).
+  public static func PoliceOnScene(game: GameInstance) -> Int32 {
+    let registry = PreventionSystem.GetAgentRegistry(game);
+    if !IsDefined(registry) {
+      return 0;
+    }
+    let n = 0;
+    let agents = registry.GetNPCList();
+    let i = 0;
+    while i < ArraySize(agents) {
+      let a = agents[i];
+      if IsDefined(a) && IsDefined(a.unit) && a.unit.IsActive() && !PreventionSystem.IsPreventionMaxTac(game, a.unit) {
+        n += 1;
+      }
+      i += 1;
+    }
+    return n;
   }
 
   private func AliveCount(des: ref<DynamicEntitySystem>) -> Int32 {
