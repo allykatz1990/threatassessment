@@ -12,8 +12,7 @@ files, no archives, no REDmod.
 | `TryUpdateStarState` | Heat freeze while the perimeter holds | – |
 | `ChangeHeatStage` | Tells the mod when heat changes | Cop Killer 2.42 |
 
-Added methods: `PreventionSystem.NCPDH_QuestFree`, `PreventionSystem.NCPDH_RaiseOneStar`,
-`PreventionSystem.NCPDH_RequestRoadblock` (calls the game's own roadblock spawn while V is on foot).
+Added methods: `PreventionSystem.NCPDH_QuestFree`, `PreventionSystem.NCPDH_RaiseOneStar`.
 
 AI orders: the perimeter sends `AIMoveToCommand`, `AIHoldPositionCommand` and `AISetCombatPresetCommand`
 (cautious style, restored afterwards) to registered police units on foot, and cancels them when the

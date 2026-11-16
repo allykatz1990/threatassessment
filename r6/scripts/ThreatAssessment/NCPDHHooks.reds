@@ -42,25 +42,6 @@ public func NCPDH_RaiseOneStar(reason: String) -> Void {
   this.HeatPipeline(reason);
 }
 
-// Asks the game for one roadblock (police car plus crew) on a road at the given distance from V.
-// The base game only does this when V is driving; the perimeter also wants it on foot.
-@addMethod(PreventionSystem)
-public func NCPDH_RequestRoadblock(minDistance: Float, maxDistance: Float) -> Bool {
-  if this.m_blockVehicleSpawnByQuest || this.ReachedRoadblockLimit() {
-    return false;
-  }
-  let vehicleRecord: wref<Vehicle_Record>;
-  let range: Vector2;
-  if !this.TryGetRoadblockDataFromHeatStage(this.m_heatStage, vehicleRecord, range) {
-    return false;
-  }
-  let vehicleIDs: array<TweakDBID>;
-  ArrayPush(vehicleIDs, vehicleRecord.GetID());
-  let ticketID = GameInstance.GetPreventionSpawnSystem(this.GetGameInstance()).RequestRoadBlockadeSpawn(vehicleIDs, new Vector2(minDistance, maxDistance), 2u);
-  this.m_agentRegistry.CreateTicket(ticketID, vehiclePoliceStrategy.None);
-  return true;
-}
-
 // ---------------------------------------------------------------- crime score
 
 @wrapMethod(PreventionSystem)

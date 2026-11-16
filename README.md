@@ -21,11 +21,12 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
   police body count push the heat past 3. MaxTac comes only for sustained escalation.
 - **3-star containment perimeter.** Officers form a ring around V (default 30 m), take cover near it
   and fight from there instead of rushing in. Arriving police cars park on the ring and the officers
-  get out there, and the police set up roadblocks at ring distance. The ring follows V at a jog, and
-  heat is frozen while V is inside it.
+  get out there, so the cars become part of the perimeter. Beat cops and officers in ordinary body
+  armor never go inside the ring. The ring follows V at a jog, and heat is frozen while V is inside it.
 - **Breaking out.** Outrun the ring and it breaks, heat unfreezes, and low-ranking officers may flee.
   The more police V has killed, the more likely.
-- **MaxTac goes in.** At 5 stars MaxTac moves inside the ring while regular officers keep holding it.
+- **Only the heavy hitters go in.** At 5 stars MaxTac and heavily armored units (Elite rank, heavy
+  weapons) move inside the ring while regular officers keep holding it.
 - **Officer voice lines.** Officers call out the perimeter, breakouts, fleeing, MaxTac arriving and
   giving up, in their own voices, using the game's own lines.
 - **Quest safe.** The mod does nothing while a quest is controlling the police, and never gives

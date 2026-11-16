@@ -194,19 +194,25 @@ public class NCPDHConfig {
   public let carPerimeter: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
-  @runtimeProperty("ModSettings.category", "3-star perimeter")
-  @runtimeProperty("ModSettings.displayName", "Roadblocks per perimeter")
-  @runtimeProperty("ModSettings.description", "When a perimeter forms, the police also try to set up this many roadblocks (cars and officers) at ring distance on nearby roads. The game's own roadblock limit still applies. 0 turns this off.")
-  @runtimeProperty("ModSettings.step", "1")
-  @runtimeProperty("ModSettings.min", "0")
-  @runtimeProperty("ModSettings.max", "4")
-  public let roadblocks: Int32 = 2;
+  @runtimeProperty("ModSettings.category", "Who may enter the perimeter")
+  @runtimeProperty("ModSettings.displayName", "MaxTac may enter")
+  @runtimeProperty("ModSettings.description", "MaxTac moves inside the ring while regular officers keep holding it. Off: MaxTac holds the ring like everyone else.")
+  public let maxTacEnters: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
-  @runtimeProperty("ModSettings.category", "3-star perimeter")
-  @runtimeProperty("ModSettings.displayName", "MaxTac may enter the perimeter")
-  @runtimeProperty("ModSettings.description", "At 5 stars MaxTac moves in while regular officers keep holding the ring. Turn off to make MaxTac follow the base game's rules only.")
-  public let maxTacEnters: Bool = true;
+  @runtimeProperty("ModSettings.category", "Who may enter the perimeter")
+  @runtimeProperty("ModSettings.displayName", "Heavy units may enter")
+  @runtimeProperty("ModSettings.description", "Heavily armored officers (Elite rank, heavy weapons) may move inside the ring from the star level below. Beat cops and officers in ordinary body armor always stay on the ring.")
+  public let heavyEnter: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Who may enter the perimeter")
+  @runtimeProperty("ModSettings.displayName", "Stars before heavy units go in")
+  @runtimeProperty("ModSettings.description", "The heat level at which heavy units and MaxTac may enter the ring.")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "3")
+  @runtimeProperty("ModSettings.max", "5")
+  public let enterStars: Int32 = 5;
 
   // ------------------------------------------------------------------ Fleeing
   @runtimeProperty("ModSettings.mod", "Threat Assessment")

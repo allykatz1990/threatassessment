@@ -51,13 +51,16 @@ public class NCPDHUnit {
   public let target: Vector4;
   public let presetSent: Bool;          // switched to the cautious combat style
   public let origPreset: EAICombatPreset;
+  public let creeps: Int32;             // times caught inside the ring (then he is held in place)
+  public let entering: Bool;            // allowed inside (MaxTac / heavy), logged once
 }
 
 // One police car the perimeter has told to park on the ring.
 public class NCPDHVehicle {
   public let id: EntityID;
-  public let mode: Int32;     // 1 driving to the ring, 2 parked and crew told to get out
+  public let mode: Int32;     // 1 driving to the ring, 2 parked and crew told to get out (or released)
   public let sentAt: Float;
+  public let retries: Int32;
 }
 
 public class NCPDHSystem extends ScriptableSystem {
@@ -326,9 +329,7 @@ public class NCPDHSystem extends ScriptableSystem {
       this.m_brokenAt = -10000.0;
       return;
     }
-    if cur == 5 {
-      this.m_eliteAnnounced = false;
-    }
+    this.m_eliteAnnounced = false;
     if cur >= 3 {
       this.EnsureTicking();
     }
@@ -441,19 +442,6 @@ public class NCPDHSystem extends ScriptableSystem {
     this.m_lastStandoffLine = now;
     this.Log(s"Perimeter formed, radius \(this.Config().radius) m. Heat frozen.");
     NCPDHVoice.Play(this, NCPDHVoiceEvent.PerimeterSet, null);
-    let cfg = this.Config();
-    let ps = this.Prevention();
-    if IsDefined(ps) && cfg.roadblocks > 0 {
-      let placed = 0;
-      let i = 0;
-      while i < cfg.roadblocks {
-        if ps.NCPDH_RequestRoadblock(cfg.radius, cfg.radius + 25.0) {
-          placed += 1;
-        }
-        i += 1;
-      }
-      this.Log(s"Roadblocks requested at ring distance: \(placed) of \(cfg.roadblocks)");
-    }
   }
 
   // Gives every officer on foot an order: hold the ring, or move to it. Returns how many are on it.
@@ -486,16 +474,23 @@ public class NCPDHSystem extends ScriptableSystem {
     if rec.mode == 3 {
       return false;
     }
-    if cfg.maxTacEnters && PreventionSystem.IsPreventionMaxTac(game, unit) {
-      // MaxTac is not held back. Regular officers keep the ring while MaxTac goes in.
+    if this.MayEnter(unit, stage) {
+      // MaxTac and heavy units are not held back. Regular officers keep the ring while they go in.
       if IsDefined(rec.cmd) {
         AIComponent.CancelCommand(unit, rec.cmd);
         rec.cmd = null;
-        rec.mode = 0;
       }
-      if stage >= 5 && !this.m_eliteAnnounced {
+      if rec.presetSent {
+        NCPDHSystem.SendPreset(unit, rec.origPreset);
+        rec.presetSent = false;
+      }
+      rec.mode = 0;
+      if !rec.entering {
+        rec.entering = true;
+        this.Log(s"Entering the perimeter: \(TDBID.ToStringDEBUG(unit.GetRecordID()))");
+      }
+      if !this.m_eliteAnnounced {
         this.m_eliteAnnounced = true;
-        this.Log("MaxTac entering the perimeter");
         NCPDHVoice.Play(this, NCPDHVoiceEvent.EliteEnter, null);
       }
       return false;
@@ -523,8 +518,12 @@ public class NCPDHSystem extends ScriptableSystem {
         NCPDHSystem.SendPreset(unit, EAICombatPreset.IsCautious);
         rec.presetSent = true;
       }
-      if gap < -tolerance {
-        // Inside the ring: back out to it.
+      if gap < -2.0 {
+        // Inside the ring: back out to it. Once caught, he is held in place when he gets back.
+        if rec.mode != 1 {
+          rec.creeps += 1;
+          this.Log(s"Officer \(EntityID.ToDebugString(rec.id)) crossed into the ring (\(-gap) m), sent back");
+        }
         let moved = Vector4.Distance(rec.target, ring) > tolerance;
         if rec.mode != 1 || moved || now - rec.sentAt > 4.0 {
           this.SendMove(unit, rec, ring, moveMovementType.Run, now);
@@ -537,13 +536,20 @@ public class NCPDHSystem extends ScriptableSystem {
             this.SendMove(unit, rec, ring, gap > 15.0 ? moveMovementType.Sprint : moveMovementType.Run, now);
           }
         } else {
-          // In the band: free to pick his own cover and fight from it.
-          if rec.mode == 1 && gap >= 0.0 && IsDefined(rec.cmd) {
-            AIComponent.CancelCommand(unit, rec.cmd);
-            rec.cmd = null;
-          }
-          if rec.mode != 1 || gap >= 0.0 {
-            rec.mode = 4;
+          // In the band: free to pick his own cover and fight from it. An officer who has
+          // already crept inside once is held where he is (usually behind the cover he picked).
+          if rec.creeps > 0 {
+            if gap >= 0.0 && (rec.mode != 2 || now - rec.sentAt > 6.0) {
+              this.SendHold(unit, rec, now);
+            }
+          } else {
+            if rec.mode == 1 && gap >= 0.0 && IsDefined(rec.cmd) {
+              AIComponent.CancelCommand(unit, rec.cmd);
+              rec.cmd = null;
+            }
+            if rec.mode != 1 || gap >= 0.0 {
+              rec.mode = 4;
+            }
           }
         }
       }
@@ -564,6 +570,38 @@ public class NCPDHSystem extends ScriptableSystem {
       }
     }
     return true;
+  }
+
+  // MaxTac and heavy units may go inside the ring from the configured star level.
+  private func MayEnter(unit: wref<ScriptedPuppet>, stage: Int32) -> Bool {
+    let cfg = this.Config();
+    if stage < cfg.enterStars {
+      return false;
+    }
+    if cfg.maxTacEnters && PreventionSystem.IsPreventionMaxTac(this.GetGameInstance(), unit) {
+      return true;
+    }
+    return cfg.heavyEnter && NCPDHSystem.IsHeavy(unit);
+  }
+
+  // Elite rank, MaxTac rank, or a heavy-weapons archetype. Beat cops and body-armor officers are not.
+  public static func IsHeavy(unit: wref<ScriptedPuppet>) -> Bool {
+    let rec = TweakDBInterface.GetCharacterRecord(unit.GetRecordID());
+    if !IsDefined(rec) {
+      return false;
+    }
+    if IsDefined(rec.Rarity()) {
+      let r = rec.Rarity().Type();
+      if Equals(r, gamedataNPCRarity.Elite) || Equals(r, gamedataNPCRarity.MaxTac) || Equals(r, gamedataNPCRarity.Boss) {
+        return true;
+      }
+    }
+    if IsDefined(rec.ArchetypeData()) && IsDefined(rec.ArchetypeData().Type()) {
+      let arch = rec.ArchetypeData().Type().Type();
+      return Equals(arch, gamedataArchetypeType.HeavyRangedT2) || Equals(arch, gamedataArchetypeType.HeavyRangedT3)
+        || Equals(arch, gamedataArchetypeType.HeavyMeleeT2) || Equals(arch, gamedataArchetypeType.HeavyMeleeT3);
+    }
+    return false;
   }
 
   // ---------------------------------------------------------------- combat style
@@ -615,29 +653,43 @@ public class NCPDHSystem extends ScriptableSystem {
             let dx = pos.X - this.m_anchor.X;
             let dy = pos.Y - this.m_anchor.Y;
             let d = MaxF(SqrtF(dx * dx + dy * dy), 0.1);
-            if d <= cfg.radius + 8.0 || (rec.mode == 1 && now - rec.sentAt > 15.0) {
-              // At the ring (or inside it already, or stuck): stop here and get out.
-              VehicleComponent.QueueEventToAllPassengers(game, veh, AIEvents.ExitVehicleEvent());
-              rec.mode = 2;
-              rec.sentAt = now;
-              this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) parked \(d) m out, crew getting out");
+            let stuck = rec.mode == 1 && now - rec.sentAt > 15.0;
+            if stuck && d > cfg.radius + 40.0 {
+              // Stuck far away: try once more, then leave the car to the base game.
+              if rec.retries < 1 {
+                rec.retries += 1;
+                rec.mode = 0;
+                this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) stuck \(d) m out, retrying");
+              } else {
+                rec.mode = 2;
+                this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) stuck \(d) m out, released");
+              }
             } else {
-              if rec.mode == 0 && d <= cfg.radius + 70.0 {
-                let spot = new Vector4(this.m_anchor.X + dx / d * (cfg.radius + 4.0), this.m_anchor.Y + dy / d * (cfg.radius + 4.0), pos.Z, 1.0);
-                let cmd = new AIVehicleDriveToPointAutonomousCommand();
-                cmd.targetPosition = Vector4.Vector4To3(spot);
-                cmd.minimumDistanceToTarget = 4.0;
-                cmd.maxSpeed = 14.0;
-                cmd.minSpeed = 3.0;
-                cmd.clearTrafficOnPath = true;
-                cmd.forcedStartSpeed = -1.0;
-                cmd.driveDownTheRoadIndefinitely = false;
-                let evt = new AICommandEvent();
-                evt.command = cmd;
-                veh.QueueEvent(evt);
-                rec.mode = 1;
+              if d <= cfg.radius + 16.0 || stuck {
+                // At the ring (or inside it already, or stuck nearby): stop here and get out.
+                VehicleComponent.QueueEventToAllPassengers(game, veh, AIEvents.ExitVehicleEvent());
+                rec.mode = 2;
                 rec.sentAt = now;
-                this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) told to park on the ring (\(d) m out)");
+                this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) parked \(d) m out, crew getting out");
+              } else {
+                if rec.mode == 0 && d <= cfg.radius + 70.0 {
+                  // Aim well outside the ring: cars overshoot, and the crew should get out outside it.
+                  let spot = new Vector4(this.m_anchor.X + dx / d * (cfg.radius + 10.0), this.m_anchor.Y + dy / d * (cfg.radius + 10.0), pos.Z, 1.0);
+                  let cmd = new AIVehicleDriveToPointAutonomousCommand();
+                  cmd.targetPosition = Vector4.Vector4To3(spot);
+                  cmd.minimumDistanceToTarget = 4.0;
+                  cmd.maxSpeed = 11.0;
+                  cmd.minSpeed = 3.0;
+                  cmd.clearTrafficOnPath = true;
+                  cmd.forcedStartSpeed = -1.0;
+                  cmd.driveDownTheRoadIndefinitely = false;
+                  let evt = new AICommandEvent();
+                  evt.command = cmd;
+                  veh.QueueEvent(evt);
+                  rec.mode = 1;
+                  rec.sentAt = now;
+                  this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) told to park on the ring (\(d) m out)");
+                }
               }
             }
           }
