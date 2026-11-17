@@ -11,7 +11,8 @@
 //   PreventionSystem.CalculateCrimeScoreForNPC      crime filter, ramp, plateau, escalation
 //   PreventionSystem.CalculateCrimeScoreForVehicle  plateau for vehicle damage
 //   PreventionSystem.NotifyVehicleExplosion         destroyed police vehicles count as major crimes
-//   PreventionSystem.OnCrimeWitnessRequest          witness calls about petty crime are ignored
+//   PreventionSystem.OnCrimeWitnessRequest          witness calls: petty ones ignored, others timed
+//   CallPolice.Activate                             remembers who is calling (NCPDHWitness.reds)
 //   PreventionSystem.TryUpdateStarState             heat freeze while the perimeter holds
 //   PreventionSystem.ChangeHeatStage                tells the mod when the heat changes
 //   PreventionSystem.GetDataTableForCurrentHeat     response size per star (NCPDHResponse.reds)
@@ -106,8 +107,12 @@ public final static func NotifyVehicleExplosion(veh: ref<VehicleObject>) -> Void
 @wrapMethod(PreventionSystem)
 protected final func OnCrimeWitnessRequest(request: ref<PreventionCrimeWitnessRequest>) -> Void {
   let sys = NCPDHSystem.Get(this.GetGameInstance());
-  if IsDefined(sys) && !this.IsChasingPlayer() && sys.Active(this) && sys.ShouldIgnoreWitness() {
+  if IsDefined(sys) && !this.IsChasingPlayer() && sys.Active(this) && !sys.WitnessPassing() && sys.ShouldIgnoreWitness() {
     sys.Log("Witness call about a petty crime: ignored");
+    return;
+  }
+  // A civilian's phone call: it has to go through first (NCPDHWitness.reds).
+  if IsDefined(sys) && IsDefined(this.m_player) && sys.Witness().TakeOver(sys, this, request.criminalPosition) {
     return;
   }
   wrappedMethod(request);

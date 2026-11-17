@@ -14,7 +14,8 @@ values become the base this mod scales from.
 | `CalculateCrimeScoreForNPC` | Petty crime filter, ramp, 3-star plateau, major-crime count | Gang Retaliation 1.4.0 (`PoliceImmunity.reds`) |
 | `CalculateCrimeScoreForVehicle` | Plateau for vehicle damage | – |
 | `NotifyVehicleExplosion` (static) | Destroyed police vehicles count as major crimes | – |
-| `OnCrimeWitnessRequest` | Witness calls about petty crime are ignored | – |
+| `OnCrimeWitnessRequest` | Witness calls: petty ones ignored, others must finish a timed call | – |
+| `CallPolice.Activate` (behavior task) | Remembers who is calling; always calls the original | They Will Remember 3.0.1 |
 | `TryUpdateStarState` | Heat freeze while the perimeter holds | – |
 | `ChangeHeatStage` | Tells the mod when heat changes | Cop Killer 2.42 |
 | `GetDataTableForCurrentHeat` | Response size per star | – |

@@ -22,7 +22,8 @@ enum NCPDHVoiceEvent {
   BreakOut = 4,       // V breaks through the ring
   Flee = 5,           // a low-rank officer runs
   EliteEnter = 6,     // MaxTac (later: corpo elite squads) moves inside the ring
-  GiveUp = 7          // heat drops to zero
+  GiveUp = 7,         // heat drops to zero
+  Calling = 8         // a witness starts phoning NCPD
 }
 
 public abstract class NCPDHVoice {
@@ -37,6 +38,7 @@ public abstract class NCPDHVoice {
       case NCPDHVoiceEvent.Flee: return 5;
       case NCPDHVoiceEvent.EliteEnter: return 6;
       case NCPDHVoiceEvent.GiveUp: return 7;
+      case NCPDHVoiceEvent.Calling: return 8;
     }
     return 0;
   }
@@ -51,6 +53,7 @@ public abstract class NCPDHVoice {
       case NCPDHVoiceEvent.Flee: return "Flee";
       case NCPDHVoiceEvent.EliteEnter: return "EliteEnter";
       case NCPDHVoiceEvent.GiveUp: return "GiveUp";
+      case NCPDHVoiceEvent.Calling: return "Calling";
     }
     return "?";
   }
@@ -90,6 +93,9 @@ public abstract class NCPDHVoice {
       case NCPDHVoiceEvent.GiveUp:
         ArrayPush(l, n"combat_ended");
         ArrayPush(l, n"stlh_patrol_back");
+        break;
+      case NCPDHVoiceEvent.Calling:
+        ArrayPush(l, n"phone_start");
         break;
     }
     return l;

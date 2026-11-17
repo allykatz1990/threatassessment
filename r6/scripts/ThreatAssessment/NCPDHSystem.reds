@@ -90,6 +90,8 @@ public class NCPDHSystem extends ScriptableSystem {
   private let m_lastValidUnitTime: Float;
   private let m_units: array<ref<NCPDHUnit>>;
   private let m_corp: ref<NCPDHCorp>;
+  private let m_witness: ref<NCPDHWitness>;
+  private let m_witnessPassUntil: Float;
   private let m_handoverLogged: Bool;
   private let m_vehicles: array<ref<NCPDHVehicle>>;
   private let m_eliteAnnounced: Bool;
@@ -108,6 +110,7 @@ public class NCPDHSystem extends ScriptableSystem {
 
   private func OnAttach() -> Void {
     this.m_instanceID = RandRange(1, 2000000000);
+    this.m_witness = new NCPDHWitness();
     this.m_corp = new NCPDHCorp();
     this.m_corp.Reset();
     this.m_lastPettyTime = -10000.0;
@@ -322,6 +325,23 @@ public class NCPDHSystem extends ScriptableSystem {
     if this.TakePendingRaise() {
       ps.NCPDH_RaiseOneStar("NCPDH_PoliceVehicleDestroyed");
     }
+  }
+
+  // ================================================================ witness calls
+  public func Witness() -> ref<NCPDHWitness> {
+    if !IsDefined(this.m_witness) {
+      this.m_witness = new NCPDHWitness();
+    }
+    return this.m_witness;
+  }
+
+  // A call our witness system let through: the petty-witness filter must not stop it.
+  public func AllowWitness() -> Void {
+    this.m_witnessPassUntil = this.Now() + 2.0;
+  }
+
+  public func WitnessPassing() -> Bool {
+    return this.Now() <= this.m_witnessPassUntil;
   }
 
   // ================================================================ corporate handover

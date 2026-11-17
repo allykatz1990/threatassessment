@@ -55,6 +55,55 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.description", "A civilian who phones in a crime the filter ignored does not start a chase. Calls about anything else still go through.")
   public let pettyWitness: Bool = true;
 
+  // ------------------------------------------------------------------ Witness calls
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Witness calls")
+  @runtimeProperty("ModSettings.displayName", "Witnesses have to finish the call")
+  @runtimeProperty("ModSettings.description", "With no stars, a civilian calling NCPD takes time. Kill or knock out the caller before the call goes through and nobody comes. Once you are already wanted, calls go through at once.")
+  public let witnessCalls: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Witness calls")
+  @runtimeProperty("ModSettings.displayName", "Call length (seconds)")
+  @runtimeProperty("ModSettings.description", "How long you have to stop a caller.")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "2")
+  @runtimeProperty("ModSettings.max", "60")
+  public let callSeconds: Float = 10.0;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Witness calls")
+  @runtimeProperty("ModSettings.displayName", "Rich districts: chance a witness calls (percent)")
+  @runtimeProperty("ModSettings.description", "City Center and Westbrook (Charter Hill, North Oak, Japantown).")
+  @runtimeProperty("ModSettings.step", "5")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let callChanceRich: Int32 = 90;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Witness calls")
+  @runtimeProperty("ModSettings.displayName", "Middle districts: chance a witness calls (percent)")
+  @runtimeProperty("ModSettings.description", "Watson and Heywood.")
+  @runtimeProperty("ModSettings.step", "5")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let callChanceMid: Int32 = 60;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Witness calls")
+  @runtimeProperty("ModSettings.displayName", "Poor districts: chance a witness calls (percent)")
+  @runtimeProperty("ModSettings.description", "Santo Domingo, Pacifica, the Badlands and Dogtown, where nobody expects NCPD to come anyway.")
+  @runtimeProperty("ModSettings.step", "5")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let callChancePoor: Int32 = 25;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Witness calls")
+  @runtimeProperty("ModSettings.displayName", "On-screen warning")
+  @runtimeProperty("ModSettings.description", "Shows when a witness starts calling, when the call goes through, and when you cut it off.")
+  public let callWarning: Bool = true;
+
   // ------------------------------------------------------------------ Heat
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Heat")

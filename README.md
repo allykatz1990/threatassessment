@@ -15,6 +15,11 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
   not a police matter. Heat starts only after several civilian deaths in a short time (default 3 in
   30 seconds), or on any attack on police. Witness calls about crimes the filter ignored don't start
   a chase.
+- **Witnesses have to finish the call.** With no stars, a civilian calling NCPD takes time (default
+  10 seconds). Kill or knock out the caller first and nobody comes. Whether a witness calls at all
+  depends on the district: most do in City Center and Westbrook, few do in Santo Domingo, Pacifica,
+  the Badlands and Dogtown. An on-screen warning tells you when a call starts, goes through or is
+  cut off.
 - **Fast ramp, then a plateau.** Once the police care, heat climbs to 3 stars quickly and then stops.
   Ordinary crimes add nothing from 3 stars on.
 - **A thin response, then a big one.** 1 and 2 stars bring a few officers, and slowly. At 3 stars the
@@ -46,7 +51,7 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
 
 ## Planned
 
-Interruptible witness calls, response to the crime scene instead of the player, fewer roaming
+Response to the crime scene instead of the player, fewer roaming
 patrols, district wealth scaling, corporations answering attacks on their own guards at any heat,
 optional bribes, and deeper integration with They Will Remember and Night City Alive.
 
