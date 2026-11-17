@@ -52,4 +52,19 @@ records are skipped). They wait while entities tagged `TheyWillRemember.Squad` (
 or `GangRetaliation` (Gang Retaliation) exist, so ambushes don't stack. No code dependency on
 either mod.
 
+## Other police and wanted-level mods
+
+Checked from each mod's files (2026-11-17) or, where marked, from its Nexus description only.
+"Loads fine" means no two mods replace the same function, so redscript compiles and nothing
+crashes. Whether the two together play the way you want is a different question, answered below.
+
+| Mod | Loads with Threat Assessment | How they play together |
+|---|---|---|
+| Eyes on V – No Automatic Civilian Crime Reports 0.8.0 | Yes. Both only wrap; they share `OnCrimeWitnessRequest` and stack in either order. | Eyes on V blocks civilian crime reports while police aren't already chasing V, so heat only starts when police see the crime. Threat Assessment's witness calls then never reach NCPD; turning off "Witnesses have to finish the call" changes nothing. Everything else (perimeter, jurisdictions, response size, search) works as normal. |
+| NCPD Prevention Police Enhancement 2.9.2 (NCPDPPE) | Yes. NCPDPPE replaces `CalculateCrimeScoreForVehicle`, `StartSearchingTimerRequest`, `OnHeatChanged` and others; Threat Assessment only wraps. The only shared functions are `CalculateCrimeScoreForNPC` and `CalculateCrimeScoreForVehicle`, and wraps stack on top of a replacement. | Both rework the whole heat system, so they overlap: Threat Assessment scales NCPDPPE's response tables again on top of NCPDPPE's own numbers, both lengthen the search, and NCPDPPE gives Pacifica its own security preset that Threat Assessment then switches off. Pick one, or keep NCPDPPE and turn off Threat Assessment's "Response size per star", "Response depends on the district" and "Police keep searching longer". Not tested in game together. |
+| Law Enforcement Overhaul 3.4 | Yes. Tweak files only (district presets and spawn pools), no scripts. | Threat Assessment scales whichever response table the district uses, so Law Enforcement Overhaul's mercenaries, corporate units and Kurtz militia get the perimeter, sizing and search like NCPD does. Where the two disagree, Threat Assessment's district rules win: with "No police in Pacifica" on, Law Enforcement Overhaul's Pacifica mercenaries don't respond either; in Dogtown and the corporate districts at 3-4 stars, its units withdraw and Threat Assessment's Barghest or corporate squads come instead. To keep Law Enforcement Overhaul's version, turn off "No police in Pacifica", "NCPD stays out of Barghest turf" and set the corporate districts to Off. |
+| Someone Call The Police | Not checked from files (Nexus description only). | Same idea as Threat Assessment's witness calls (one of its inspirations): witnesses must finish a call, chance by district. Running both doubles the witness handling. Use one; with Someone Call The Police installed, turn off "Witnesses have to finish the call" and "Ignore witness calls about petty crime". |
+| Someone Call NCPD | Not checked from files (Nexus description only). | Covers something Threat Assessment doesn't: civilians reporting gang fights and shootouts that don't involve V. Should sit alongside it. |
+| The Thin Blue Line | Not checked from files (Nexus description only). | Overlaps with officers fleeing after V's kill streak: Thin Blue Line makes NCPD retreat and drop the heat after enough kills. Both can run; expect Thin Blue Line to end some chases that Threat Assessment's perimeter would otherwise keep frozen. Not tested together. |
+
 Watch in testing: Cop Killer and Gang Retaliation also send move orders to NPCs in some situations.

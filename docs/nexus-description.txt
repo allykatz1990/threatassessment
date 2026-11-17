@@ -35,6 +35,16 @@ No REDmod, no archives.
 [size=4][b]Compatibility[/b][/size]
 Every game function is wrapped, never replaced. Tested alongside They Will Remember, Night City Alive, Gang Retaliation, Cop Killer and Night City Traffic Overhaul. Night City Alive users: skip its optional "Sensitive Prevention" file. Full list on GitHub.
 
+[b]Other police mods[/b]
+[list]
+[*][b]Eyes on V[/b] – works. Civilians stop reporting crimes, so heat only starts when police see you; this mod's witness calls then have nothing to do.
+[*][b]NCPD Prevention Police Enhancement[/b] – loads fine, but both overhaul the same heat system. Pick one, or keep NCPDPPE and turn off this mod's response size, district response and longer search settings.
+[*][b]Law Enforcement Overhaul[/b] – works; its mercenaries and corporate units get the perimeter and sizing. This mod's district rules win where they differ (no response in Pacifica, Barghest in Dogtown, corporate squads at 3-4 stars). Turn those settings off to keep LEO's version.
+[*][b]Someone Call The Police[/b] – does the same job as this mod's witness calls. Use one; if you keep it, turn off "Witnesses have to finish the call".
+[*][b]Someone Call NCPD[/b] – covers gang fights and shootouts that don't involve you, so it should sit alongside this one.
+[*][b]The Thin Blue Line[/b] – can run together; it makes NCPD give up after enough kills, which can end a perimeter early. Not tested together yet.
+[/list]
+
 [size=4][b]Open source[/b][/size]
 GPL-3.0. Source, issue tracker and testing guide: https://github.com/allykatz1990/threatassessment
 Permissions are open: you may share, modify and redistribute, but anything built from it must stay open source under GPL-3.0.
