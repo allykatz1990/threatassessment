@@ -18,7 +18,7 @@ First public beta.
   one corporation per chase, matching police numbers; NCPD back at 5 with MaxTac
 - Corporations protect their own: attacking their guards in the city brings a squad at any heat
 - Dogtown: Barghest instead of NCPD, heat stops at the border both ways
-- Pacifica: no police
+- Pacifica: no police; heat clears after 15 s there, so the Dogtown checkpoint opens
 - Optical camo respected
 - Officer and corporate voice lines, with a CET command to test every line
 - Quest safety: quest-controlled police untouched, quest characters never ordered or counted, pause

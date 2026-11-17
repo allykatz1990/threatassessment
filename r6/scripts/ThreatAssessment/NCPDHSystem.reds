@@ -94,6 +94,7 @@ public class NCPDHSystem extends ScriptableSystem {
   private let m_witnessPassUntil: Float;
   private let m_handoverLogged: Bool;
   private let m_paused: Bool;
+  private let m_pacificaSince: Float;     // when V crossed into Pacifica with heat, below zero if not
   private let m_scene: Vector4;           // where the crime that started this heat happened
   private let m_voiceTestIndex: Int32;
   private let m_heatZoneKnown: Bool;     // m_heatInDogtown is valid for the current heat
@@ -125,6 +126,7 @@ public class NCPDHSystem extends ScriptableSystem {
     this.m_brokenAt = -10000.0;
     this.m_lastExplosionEvent = -10000.0;
     this.m_searchStart = -1.0;
+    this.m_pacificaSince = -1.0;
     this.m_lastStandoffLine = -10000.0;
     let i = 0;
     while i < 10 {
@@ -677,6 +679,23 @@ public class NCPDHSystem extends ScriptableSystem {
           return;
         }
       }
+    }
+
+    // Pacifica: NCPD isn't coming, so it doesn't keep a wanted level on V there either. While V is
+    // wanted, gates such as the Dogtown checkpoint refuse to open, so this matters.
+    if stage >= 1 && this.Active(ps) && this.Zone(ps) == 3 {
+      if this.m_pacificaSince < 0.0 {
+        this.m_pacificaSince = now;
+      }
+      if now - this.m_pacificaSince >= cfg.pacificaClearSeconds {
+        this.Log("In Pacifica: NCPD gives up, heat cleared");
+        NCPDHWitness.Message(game, "NCPD won't follow you into Pacifica");
+        this.m_pacificaSince = -1.0;
+        ps.NCPDH_ClearHeat("NCPDH_Pacifica");
+        return;
+      }
+    } else {
+      this.m_pacificaSince = -1.0;
     }
 
     if stage < 3 {

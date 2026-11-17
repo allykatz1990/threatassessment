@@ -52,8 +52,8 @@ try and [CHANGELOG.md](CHANGELOG.md) for what changed.
   guards out in the city and it sends a squad after you even with no stars.
 - **Dogtown and Pacifica.** NCPD isn't allowed in Dogtown: Barghest answers instead, from 1 star,
   with its elites and exo suits at 5 stars, when MaxTac also flies in. NCPD doesn't come to Pacifica
-  at all: crimes there add no heat, witnesses don't call, and police chasing you turn back at the
-  border. Dogtown is its own jurisdiction: cross its border either way and your heat is gone. NCPD
+  at all: crimes there add no heat, witnesses don't call, police chasing you turn back at the
+  border, and your heat clears after a short time there. Dogtown is its own jurisdiction: cross its border either way and your heat is gone. NCPD
   heat never follows you in, and Barghest heat never follows you out.
 - **Officer voice lines.** Officers and corporate soldiers call out the perimeter, breakouts,
   fleeing, MaxTac arriving and giving up, in their own voices, using the game's own lines.

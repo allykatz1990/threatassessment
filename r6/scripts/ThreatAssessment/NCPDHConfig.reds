@@ -690,8 +690,17 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
   @runtimeProperty("ModSettings.displayName", "No police in Pacifica")
-  @runtimeProperty("ModSettings.description", "NCPD doesn't patrol or respond in Pacifica. Crimes there add no heat and witnesses don't call. Come in with stars and the police turn back; the stars fade on the search timer.")
+  @runtimeProperty("ModSettings.description", "NCPD doesn't patrol or respond in Pacifica. Crimes there add no heat and witnesses don't call. Come in with stars and the police turn back, and the heat clears after the time below.")
   public let pacificaNoPolice: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
+  @runtimeProperty("ModSettings.displayName", "Heat clears in Pacifica after (seconds)")
+  @runtimeProperty("ModSettings.description", "Come into Pacifica with stars and NCPD gives up after this long. While you are still wanted, gates like the Dogtown checkpoint stay shut and the guards treat you as a wanted criminal.")
+  @runtimeProperty("ModSettings.step", "5")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "300")
+  public let pacificaClearSeconds: Float = 15.0;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
