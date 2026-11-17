@@ -175,6 +175,9 @@ public class NCPDHSystem extends ScriptableSystem {
   // add instead. Never more than the base game, except the ramp multiplier below 3 stars.
   public func AdjustNPCScore(ps: ref<PreventionSystem>, request: ref<PreventionDamageRequest>, delta: Float) -> Float {
     let cfg = this.Config();
+    if this.Zone(ps) == 3 {
+      return 0.0;   // Pacifica: nobody is coming, whatever V does
+    }
     let stage = NCPDHSystem.Stage(ps.GetHeatStage());
     let now = this.Now();
     let explosive = Equals(request.attackType, gamedataAttackType.Explosion) || Equals(request.attackType, gamedataAttackType.PressureWave);
@@ -246,6 +249,9 @@ public class NCPDHSystem extends ScriptableSystem {
 
   // Score for vehicle damage: only the plateau applies.
   public func AdjustVehicleScore(ps: ref<PreventionSystem>, delta: Float) -> Float {
+    if this.Zone(ps) == 3 {
+      return 0.0;
+    }
     if NCPDHSystem.Stage(ps.GetHeatStage()) >= 3 {
       return this.PlateauScore(delta);
     }
@@ -345,11 +351,67 @@ public class NCPDHSystem extends ScriptableSystem {
   }
 
   // ================================================================ corporate handover
-  // 3-4 stars in a corporate district (setting): NCPD withdraws and the corporation takes over.
-  public func HandedOver(ps: ref<PreventionSystem>, stage: Int32) -> Bool {
+  // What kind of ground V is on: 0 ordinary, 1 corporate district, 2 Barghest turf (Dogtown),
+  // 3 Pacifica (the police don't come).
+  public func Zone(ps: ref<PreventionSystem>) -> Int32 {
     let cfg = this.Config();
-    return cfg.corpResponse && cfg.corpTakeover && stage >= 3 && stage <= 4 && this.Active(ps)
-      && NotEquals(NCPDHCorp.ChoiceFor(cfg, ps), NCPDHCorpChoice.Off);
+    if !IsDefined(ps) {
+      return 0;
+    }
+    if cfg.pacificaNoPolice && NCPDHCorp.InDistrict(ps, gamedataDistrict.Pacifica) {
+      return 3;
+    }
+    let choice = NCPDHCorp.ChoiceFor(cfg, ps);
+    if Equals(choice, NCPDHCorpChoice.Barghest) {
+      return 2;
+    }
+    if NotEquals(choice, NCPDHCorpChoice.Off) {
+      return 1;
+    }
+    return 0;
+  }
+
+  // True when NCPD must not be on the scene at this star level:
+  // Pacifica always, Barghest turf always (MaxTac still comes at 5), corporate districts at 3-4.
+  public func NcpdBarred(ps: ref<PreventionSystem>, stage: Int32) -> Bool {
+    let cfg = this.Config();
+    if stage < 1 || !this.Active(ps) {
+      return false;
+    }
+    let zone = this.Zone(ps);
+    if zone == 3 {
+      return true;
+    }
+    if zone == 2 {
+      return cfg.dogtownNoNcpd;
+    }
+    if zone == 1 {
+      return cfg.corpResponse && cfg.corpTakeover && stage >= 3 && stage <= 4;
+    }
+    return false;
+  }
+
+  // In Pacifica not even MaxTac comes (setting).
+  public func MaxTacBarred(ps: ref<PreventionSystem>) -> Bool {
+    return this.Zone(ps) == 3 && this.Config().pacificaNoMaxTac;
+  }
+
+  private func LogZone(ps: ref<PreventionSystem>, stage: Int32) -> Void {
+    if this.m_handoverLogged {
+      return;
+    }
+    this.m_handoverLogged = true;
+    let zone = this.Zone(ps);
+    if zone == 3 {
+      this.Log("Pacifica: NCPD doesn't come here, officers turn back");
+    } else {
+      if zone == 2 {
+        this.Log("Dogtown: NCPD isn't allowed in, Barghest responds");
+      } else {
+        this.Log("NCPD hands over to corporate security");
+      }
+      NCPDHVoice.Play(this, NCPDHVoiceEvent.GiveUp, null);
+    }
   }
 
   public func CorpEngaged() -> Bool {
@@ -385,7 +447,7 @@ public class NCPDHSystem extends ScriptableSystem {
   }
 
   // NCPD officers and cars still on the scene leave when the corporation takes over.
-  private func WithdrawPolice(registry: ref<PoliceAgentRegistry>, vPos: Vector4, now: Float) -> Void {
+  private func WithdrawPolice(registry: ref<PoliceAgentRegistry>, vPos: Vector4, now: Float, includeMaxTac: Bool) -> Void {
     let game = this.GetGameInstance();
     let agents = registry.GetNPCList();
     let i = 0;
@@ -393,7 +455,7 @@ public class NCPDHSystem extends ScriptableSystem {
       let a = agents[i];
       i += 1;
       if IsDefined(a) && !a.isQuestNPC && IsDefined(a.unit) && a.unit.IsActive()
-          && !PreventionSystem.IsPreventionMaxTac(game, a.unit) && !VehicleComponent.IsMountedToVehicle(game, a.unit) {
+          && (includeMaxTac || !PreventionSystem.IsPreventionMaxTac(game, a.unit)) && !VehicleComponent.IsMountedToVehicle(game, a.unit) {
         let rec = this.GetUnit(a.unit.GetEntityID());
         if rec.mode != 3 {
           this.Flee(a.unit, rec, vPos, now, false);
@@ -405,7 +467,8 @@ public class NCPDHSystem extends ScriptableSystem {
     while i < ArraySize(cars) {
       let c = cars[i];
       i += 1;
-      if IsDefined(c) && IsDefined(c.unit) && !c.unit.IsDestroyed() {
+      // MaxTac arrives by AV: AVs are left alone unless MaxTac is barred too.
+      if IsDefined(c) && IsDefined(c.unit) && !c.unit.IsDestroyed() && (includeMaxTac || IsDefined(c.unit as WheeledObject)) {
         let vrec = this.GetVehicle(c.unit.GetEntityID());
         if vrec.mode != 3 {
           vrec.mode = 3;
@@ -441,7 +504,7 @@ public class NCPDHSystem extends ScriptableSystem {
       return;
     }
     this.m_eliteAnnounced = false;
-    if cur >= 3 || cur >= this.Config().corpStars {
+    if cur >= 1 {
       this.EnsureTicking();
     }
   }
@@ -524,8 +587,16 @@ public class NCPDHSystem extends ScriptableSystem {
     let here = IsDefined(player) ? player.GetWorldPosition() : this.m_anchor;
     if stage < 3 {
       this.Dissolve("below 3 stars");
-      // Corporate squads can answer below 3 stars (setting), and leave after the chase.
-      if this.m_corp.HasUnits() || (stage > 0 && stage >= cfg.corpStars) {
+      // Districts the police stay out of (Dogtown, Pacifica): officers who come in turn back.
+      if stage >= 1 && this.NcpdBarred(ps, stage) {
+        this.LogZone(ps, stage);
+        let reg = PreventionSystem.GetAgentRegistry(game);
+        if IsDefined(reg) {
+          this.WithdrawPolice(reg, here, now, this.MaxTacBarred(ps));
+        }
+      }
+      // Corporate squads and Barghest can answer below 3 stars, and leave after the chase.
+      if stage >= 1 || this.m_corp.HasUnits() {
         this.m_corp.Tick(this, ps, stage, now, here, false);
         this.ScheduleTick(1.0);
       }
@@ -553,19 +624,21 @@ public class NCPDHSystem extends ScriptableSystem {
     // While V is cloaked the ring stays where V was last seen and never follows V.
     let hidden = this.PlayerHidden();
     let engaged = !hidden && ((IsDefined(registry) && registry.IsPoliceInCombatWithPalyer()) || this.CorpEngaged());
-    let handedOver = this.HandedOver(ps, stage);
-    if handedOver && IsDefined(registry) {
-      if !this.m_handoverLogged {
-        this.m_handoverLogged = true;
-        this.Log("NCPD hands over to corporate security");
-        NCPDHVoice.Play(this, NCPDHVoiceEvent.GiveUp, null);
-      }
-      this.WithdrawPolice(registry, vPos, now);
+    if this.NcpdBarred(ps, stage) && IsDefined(registry) {
+      this.LogZone(ps, stage);
+      this.WithdrawPolice(registry, vPos, now, this.MaxTacBarred(ps));
     } else {
       if this.m_handoverLogged && stage >= 5 {
         this.Log("5 stars: NCPD back on the scene with the corporation and MaxTac");
       }
       this.m_handoverLogged = false;
+    }
+    if this.Zone(ps) == 3 {
+      // Pacifica: no police, no perimeter. The stars fade on the normal search timer.
+      this.Dissolve("Pacifica: NCPD doesn't come here");
+      this.m_corp.Tick(this, ps, stage, now, vPos, false);
+      this.ScheduleTick(1.0);
+      return;
     }
     let lkp = ps.GetLastKnownPlayerPosition();
     if Vector4.IsXYZZero(lkp) {

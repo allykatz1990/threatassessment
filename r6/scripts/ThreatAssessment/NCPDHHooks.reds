@@ -111,6 +111,10 @@ protected final func OnCrimeWitnessRequest(request: ref<PreventionCrimeWitnessRe
     sys.Log("Witness call about a petty crime: ignored");
     return;
   }
+  if IsDefined(sys) && !this.IsChasingPlayer() && sys.Active(this) && sys.Zone(this) == 3 {
+    sys.Log("Witness report in Pacifica: nobody answers");
+    return;
+  }
   // A civilian's phone call: it has to go through first (NCPDHWitness.reds).
   if IsDefined(sys) && IsDefined(this.m_player) && sys.Witness().TakeOver(sys, this, request.criminalPosition) {
     return;
@@ -160,8 +164,7 @@ private final func GetDataTableForCurrentHeat() -> Void {
   let sys = NCPDHSystem.Get(this.GetGameInstance());
   if IsDefined(sys) && IsDefined(this.m_preventionDataMatrix) {
     // Scale the table before the game reads it, so tickets and car limits use the new values.
-    let corpZone = NotEquals(NCPDHCorp.ChoiceFor(sys.Config(), this), NCPDHCorpChoice.Off);
-    NCPDHResponse.Apply(sys, this.GetDataTableForHeat(this.m_heatStage), NCPDHSystem.Stage(this.m_heatStage), sys.Active(this), corpZone);
+    NCPDHResponse.Apply(sys, this.GetDataTableForHeat(this.m_heatStage), NCPDHSystem.Stage(this.m_heatStage), sys.Active(this), sys.Zone(this));
   }
   wrappedMethod();
 }

@@ -477,6 +477,7 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
   @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
   @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  @runtimeProperty("ModSettings.displayValues.Barghest", "Barghest")
   public let corpCorpoPlaza: NCPDHCorpChoice = NCPDHCorpChoice.Mixed;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -488,6 +489,7 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
   @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
   @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  @runtimeProperty("ModSettings.displayValues.Barghest", "Barghest")
   public let corpDowntown: NCPDHCorpChoice = NCPDHCorpChoice.Mixed;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -499,6 +501,7 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
   @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
   @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  @runtimeProperty("ModSettings.displayValues.Barghest", "Barghest")
   public let corpArasakaWaterfront: NCPDHCorpChoice = NCPDHCorpChoice.Arasaka;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -510,6 +513,7 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
   @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
   @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  @runtimeProperty("ModSettings.displayValues.Barghest", "Barghest")
   public let corpNorthOaks: NCPDHCorpChoice = NCPDHCorpChoice.Arasaka;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -521,6 +525,7 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
   @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
   @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  @runtimeProperty("ModSettings.displayValues.Barghest", "Barghest")
   public let corpCharterHill: NCPDHCorpChoice = NCPDHCorpChoice.Off;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -532,18 +537,54 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
   @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
   @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
+  @runtimeProperty("ModSettings.displayValues.Barghest", "Barghest")
   public let corpJapanTown: NCPDHCorpChoice = NCPDHCorpChoice.Off;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate districts")
   @runtimeProperty("ModSettings.displayName", "Dogtown")
-  @runtimeProperty("ModSettings.description", "Barghest runs Dogtown, but Militech is never far.")
+  @runtimeProperty("ModSettings.description", "Barghest runs Dogtown and keeps NCPD out.")
   @runtimeProperty("ModSettings.displayValues.Off", "NCPD only")
   @runtimeProperty("ModSettings.displayValues.Arasaka", "Arasaka")
   @runtimeProperty("ModSettings.displayValues.Militech", "Militech")
   @runtimeProperty("ModSettings.displayValues.KangTao", "Kang Tao")
   @runtimeProperty("ModSettings.displayValues.Mixed", "Shared ground (random)")
-  public let corpDogtown: NCPDHCorpChoice = NCPDHCorpChoice.Off;
+  @runtimeProperty("ModSettings.displayValues.Barghest", "Barghest")
+  public let corpDogtown: NCPDHCorpChoice = NCPDHCorpChoice.Barghest;
+
+  // ------------------------------------------------------------------ No-go zones
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
+  @runtimeProperty("ModSettings.displayName", "Barghest responds on its turf")
+  @runtimeProperty("ModSettings.description", "Barghest soldiers answer crimes in districts set to Barghest (Dogtown by default), matching the numbers NCPD would have sent. Their elites and exo suits come at 5 stars.")
+  public let barghestResponse: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
+  @runtimeProperty("ModSettings.displayName", "Stars before Barghest responds")
+  @runtimeProperty("ModSettings.description", "The heat level at which Barghest starts sending soldiers.")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "1")
+  @runtimeProperty("ModSettings.max", "5")
+  public let barghestStars: Int32 = 1;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
+  @runtimeProperty("ModSettings.displayName", "NCPD stays out of Barghest turf")
+  @runtimeProperty("ModSettings.description", "NCPD is not allowed in Dogtown: no officers or cars at any star level. Only MaxTac comes, at 5 stars. Officers who follow you in turn back.")
+  public let dogtownNoNcpd: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
+  @runtimeProperty("ModSettings.displayName", "No police in Pacifica")
+  @runtimeProperty("ModSettings.description", "NCPD doesn't patrol or respond in Pacifica. Crimes there add no heat and witnesses don't call. Come in with stars and the police turn back; the stars fade on the search timer.")
+  public let pacificaNoPolice: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
+  @runtimeProperty("ModSettings.displayName", "Not even MaxTac in Pacifica")
+  @runtimeProperty("ModSettings.description", "With no police in Pacifica on, MaxTac stays out too. Off: MaxTac still comes at 5 stars.")
+  public let pacificaNoMaxTac: Bool = true;
 
   // ------------------------------------------------------------------ Voice
   @runtimeProperty("ModSettings.mod", "Threat Assessment")

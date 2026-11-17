@@ -163,6 +163,9 @@ public class NCPDHWitness {
 
   // ---------------------------------------------------------------- district willingness
   public static func DistrictChance(cfg: ref<NCPDHConfig>, ps: ref<PreventionSystem>) -> Int32 {
+    if cfg.pacificaNoPolice && NCPDHCorp.InDistrict(ps, gamedataDistrict.Pacifica) {
+      return 0;   // nobody in Pacifica expects NCPD to answer
+    }
     let district = ps.GetCurrentDistrict();
     if !IsDefined(district) || !IsDefined(district.GetDistrictRecord()) {
       return cfg.callChanceMid;

@@ -43,6 +43,10 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
   ground. Only one corporation answers per chase. Heavier units at 4 stars (Militech brings
   drones), elites and a mech at 5. They hold the perimeter like the police, and their elites go in
   with MaxTac. Every district can be set to any corporation or to NCPD only.
+- **Dogtown and Pacifica.** NCPD isn't allowed in Dogtown: Barghest answers instead, from 1 star,
+  with its elites and exo suits at 5 stars, when MaxTac also flies in. NCPD doesn't come to Pacifica
+  at all: crimes there add no heat, witnesses don't call, and police chasing you turn back at the
+  border.
 - **Officer voice lines.** Officers call out the perimeter, breakouts, fleeing, MaxTac arriving and
   giving up, in their own voices, using the game's own lines.
 - **Quest safe.** The mod does nothing while a quest is controlling the police, and never gives

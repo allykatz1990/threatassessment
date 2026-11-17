@@ -20,7 +20,8 @@ enum NCPDHCorpChoice {
   Arasaka = 1,
   Militech = 2,
   KangTao = 3,
-  Mixed = 4
+  Mixed = 4,
+  Barghest = 5
 }
 
 public class NCPDHCorpUnit {
@@ -51,8 +52,26 @@ public class NCPDHCorp {
   }
 
   // ---------------------------------------------------------------- who owns this district
+  // True if V is in this district or one of its sub-districts.
+  public static func InDistrict(ps: ref<PreventionSystem>, t: gamedataDistrict) -> Bool {
+    let district = ps.GetCurrentDistrict();
+    if !IsDefined(district) || !IsDefined(district.GetDistrictRecord()) {
+      return false;
+    }
+    let rec: wref<District_Record> = district.GetDistrictRecord();
+    let depth = 0;
+    while IsDefined(rec) && depth < 4 {
+      if Equals(rec.Type(), t) {
+        return true;
+      }
+      rec = rec.ParentDistrict();
+      depth += 1;
+    }
+    return false;
+  }
+
   public static func ChoiceFor(cfg: ref<NCPDHConfig>, ps: ref<PreventionSystem>) -> NCPDHCorpChoice {
-    if !cfg.corpResponse || !IsDefined(ps) {
+    if !IsDefined(ps) {
       return NCPDHCorpChoice.Off;
     }
     let district = ps.GetCurrentDistrict();
@@ -64,8 +83,11 @@ public class NCPDHCorp {
     let depth = 0;
     while IsDefined(rec) && depth < 4 {
       let c = NCPDHCorp.ChoiceForType(cfg, rec.Type());
+      if Equals(c, NCPDHCorpChoice.Barghest) {
+        return cfg.barghestResponse ? c : NCPDHCorpChoice.Off;
+      }
       if NotEquals(c, NCPDHCorpChoice.Off) {
-        return c;
+        return cfg.corpResponse ? c : NCPDHCorpChoice.Off;
       }
       rec = rec.ParentDistrict();
       depth += 1;
@@ -103,6 +125,8 @@ public class NCPDHCorp {
         return "Kang Tao";
       case NCPDHCorpChoice.Mixed:
         return "Mixed";
+      case NCPDHCorpChoice.Barghest:
+        return "Barghest";
     }
     return "none";
   }
@@ -159,6 +183,28 @@ public class NCPDHCorp {
           ArrayPush(l, t"Character.militech_minotaur");
         }
         break;
+      case NCPDHCorpChoice.Barghest:
+        if tier == 1 {
+          ArrayPush(l, t"Character.kurtz_grunt1_ranged1_handgun_ma");
+          ArrayPush(l, t"Character.kurtz_grunt1_ranged1_handgun_wa");
+          ArrayPush(l, t"Character.kurtz_grunt1_ranged1_saratoga_wa");
+          ArrayPush(l, t"Character.kurtz_soldier1_ranged2_rifle_ma");
+          ArrayPush(l, t"Character.kurtz_soldier1_ranged2_rifle_wa");
+          ArrayPush(l, t"Character.kurtz_soldier1_generic_ranged2_rifle_wa");
+        }
+        if tier == 2 {
+          ArrayPush(l, t"Character.kurtz_soldier2_shotgun2_shotgun_ma_rare");
+          ArrayPush(l, t"Character.kurtz_soldier2_generic_ranged3_rifle_ma");
+          ArrayPush(l, t"Character.kurtz_soldier2_shotgun3_shotgun_ma");
+          ArrayPush(l, t"Character.kurtz_tech_franged2_handgun_ma_rare");
+          ArrayPush(l, t"Character.kurtz_recon_sniper2_achilles_ma_rare");
+          ArrayPush(l, t"Character.kurtz_netrunner2_netrunner2_lexington_ma_rare");
+        }
+        if tier == 3 {
+          ArrayPush(l, t"Character.kurtz_elite3_gunner3_HMG_mb_elite");
+          ArrayPush(l, t"Character.kurtz_exo");
+        }
+        break;
       case NCPDHCorpChoice.KangTao:
         if tier == 1 {
           ArrayPush(l, t"Character.kangtao_ranger1_ranged2_dian_ma");
@@ -203,8 +249,12 @@ public class NCPDHCorp {
     if !IsDefined(des) || !IsDefined(player) {
       return 0;
     }
-    let active = sys.Active(ps) && stage >= cfg.corpStars;
     let here = NCPDHCorp.ChoiceFor(cfg, ps);
+    let startAt = Equals(here, NCPDHCorpChoice.Barghest) ? cfg.barghestStars : cfg.corpStars;
+    if NotEquals(this.m_corp, NCPDHCorpChoice.Off) && Equals(this.m_corp, NCPDHCorpChoice.Barghest) {
+      startAt = cfg.barghestStars;
+    }
+    let active = sys.Active(ps) && stage >= 1 && stage >= startAt;
 
     // ---- waves
     if active && NotEquals(here, NCPDHCorpChoice.Off) {
@@ -237,7 +287,7 @@ public class NCPDHCorp {
           // Match the police on the scene: one corporate unit for every officer (setting). While NCPD
           // has handed over (3-4 stars), match the number the police would have sent instead.
           let police = NCPDHCorp.PoliceOnScene(game);
-          if sys.HandedOver(ps, stage) {
+          if sys.NcpdBarred(ps, stage) {
             police = NCPDHResponse.ExpectedPolice(sys, ps.NCPDH_CurrentTableID(), stage);
           }
           let target = Clamp(police * cfg.corpRatio / 100, cfg.corpMin, cfg.corpMax);

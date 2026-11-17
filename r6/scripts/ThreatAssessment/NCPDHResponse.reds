@@ -57,7 +57,7 @@ public abstract class NCPDHResponse {
 
   // Scales one heat table for its star level. With allowed false (mod off, or a quest steering the
   // police) the original values are put back.
-  public static func Apply(sys: ref<NCPDHSystem>, table: ref<PreventionHeatTable_Record>, stage: Int32, allowed: Bool, corpZone: Bool) -> Void {
+  public static func Apply(sys: ref<NCPDHSystem>, table: ref<PreventionHeatTable_Record>, stage: Int32, allowed: Bool, zone: Int32) -> Void {
     let cache = NCPDHTweakCache.Get();
     if !IsDefined(sys) || !IsDefined(table) || !IsDefined(cache) || stage < 1 {
       return;
@@ -67,12 +67,23 @@ public abstract class NCPDHResponse {
     let delayPct = 100;
     if allowed && cfg.responseScaling {
       countPct = NCPDHResponse.CountPercent(cfg, stage);
-      if corpZone && cfg.corpTakeover && stage >= 3 && stage <= 4 {
-        // 3-4 stars in a corporate district: the corporation handles it, NCPD sends nobody.
-        countPct = 0;
-      } else {
-        if corpZone && stage >= cfg.corpStars {
-          countPct = Max(10, countPct * cfg.corpNcpdShare / 100);
+      if zone == 3 {
+        // Pacifica: nobody comes (at 5 stars MaxTac too, unless allowed in the settings).
+        countPct = (stage >= 5 && !cfg.pacificaNoMaxTac) ? countPct : 0;
+      }
+      if zone == 2 && cfg.dogtownNoNcpd {
+        // Barghest turf: NCPD sends nobody. At 5 stars the table runs so MaxTac can come; regular
+        // officers that come with it turn back (NCPDHSystem.WithdrawPolice).
+        countPct = stage >= 5 ? countPct : 0;
+      }
+      if zone == 1 {
+        if cfg.corpTakeover && stage >= 3 && stage <= 4 {
+          // 3-4 stars in a corporate district: the corporation handles it, NCPD sends nobody.
+          countPct = 0;
+        } else {
+          if stage >= cfg.corpStars {
+            countPct = Max(10, countPct * cfg.corpNcpdShare / 100);
+          }
         }
       }
       delayPct = stage <= 2 ? cfg.lowStarDelay : 100;
