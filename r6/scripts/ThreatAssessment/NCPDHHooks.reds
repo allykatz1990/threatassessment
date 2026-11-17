@@ -51,6 +51,12 @@ public func NCPDH_CurrentTableID() -> TweakDBID {
   return none;
 }
 
+// Clears all heat the way the game does when the stars run out (police stand down and leave).
+@addMethod(PreventionSystem)
+public func NCPDH_ClearHeat(reason: String) -> Void {
+  this.execInstructionSafe(reason);
+}
+
 @addMethod(PreventionSystem)
 public func NCPDH_RaiseOneStar(reason: String) -> Void {
   this.HeatPipeline(reason);

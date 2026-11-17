@@ -46,7 +46,8 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
 - **Dogtown and Pacifica.** NCPD isn't allowed in Dogtown: Barghest answers instead, from 1 star,
   with its elites and exo suits at 5 stars, when MaxTac also flies in. NCPD doesn't come to Pacifica
   at all: crimes there add no heat, witnesses don't call, and police chasing you turn back at the
-  border.
+  border. Dogtown is its own jurisdiction: cross its border either way and your heat is gone. NCPD
+  heat never follows you in, and Barghest heat never follows you out.
 - **Officer voice lines.** Officers call out the perimeter, breakouts, fleeing, MaxTac arriving and
   giving up, in their own voices, using the game's own lines.
 - **Quest safe.** The mod does nothing while a quest is controlling the police, and never gives

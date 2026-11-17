@@ -93,6 +93,8 @@ public class NCPDHSystem extends ScriptableSystem {
   private let m_witness: ref<NCPDHWitness>;
   private let m_witnessPassUntil: Float;
   private let m_handoverLogged: Bool;
+  private let m_heatZoneKnown: Bool;     // m_heatInDogtown is valid for the current heat
+  private let m_heatInDogtown: Bool;     // the current heat was earned inside Dogtown
   private let m_vehicles: array<ref<NCPDHVehicle>>;
   private let m_eliteAnnounced: Bool;
   private let m_lastStandoffLine: Float;
@@ -497,6 +499,7 @@ public class NCPDHSystem extends ScriptableSystem {
       this.m_copKillsThisChase = 0;
       this.m_brokenAt = -10000.0;
       this.m_searchStart = -1.0;
+      this.m_heatZoneKnown = false;
       this.m_corp.Reset();      // the next chase may bring a different corporation
       if this.m_corp.HasUnits() {
         this.EnsureTicking();   // corporate squads still need to leave
@@ -504,6 +507,11 @@ public class NCPDHSystem extends ScriptableSystem {
       return;
     }
     this.m_eliteAnnounced = false;
+    if prev == 0 && cur >= 1 {
+      // Remember which side of the Dogtown border this heat was earned on.
+      this.m_heatZoneKnown = true;
+      this.m_heatInDogtown = NCPDHCorp.InDistrict(ps, gamedataDistrict.Dogtown);
+    }
     if cur >= 1 {
       this.EnsureTicking();
     }
@@ -585,6 +593,29 @@ public class NCPDHSystem extends ScriptableSystem {
     this.m_lastTickTime = now;
     let player = GetPlayer(game);
     let here = IsDefined(player) ? player.GetWorldPosition() : this.m_anchor;
+
+    // Dogtown is its own jurisdiction: heat never crosses its border, either way.
+    if stage >= 1 && cfg.dogtownBorder && this.Active(ps) {
+      let inDogtown = NCPDHCorp.InDistrict(ps, gamedataDistrict.Dogtown);
+      if !this.m_heatZoneKnown {
+        this.m_heatZoneKnown = true;
+        this.m_heatInDogtown = inDogtown;
+      } else {
+        if NotEquals(inDogtown, this.m_heatInDogtown) {
+          if inDogtown {
+            this.Log("Crossed into Dogtown: NCPD has no jurisdiction here, heat cleared");
+            NCPDHWitness.Message(game, "Dogtown: outside NCPD jurisdiction");
+          } else {
+            this.Log("Left Dogtown: Barghest heat stays behind, heat cleared");
+            NCPDHWitness.Message(game, "Left Barghest territory");
+          }
+          this.m_heatZoneKnown = false;
+          ps.NCPDH_ClearHeat("NCPDH_DogtownBorder");
+          return;
+        }
+      }
+    }
+
     if stage < 3 {
       this.Dissolve("below 3 stars");
       // Districts the police stay out of (Dogtown, Pacifica): officers who come in turn back.

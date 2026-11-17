@@ -576,6 +576,12 @@ public class NCPDHConfig {
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
+  @runtimeProperty("ModSettings.displayName", "Heat stops at the Dogtown border")
+  @runtimeProperty("ModSettings.description", "Dogtown is its own jurisdiction. Cross into Dogtown and all NCPD heat is gone; leave Dogtown and the heat you earned with Barghest stays behind.")
+  public let dogtownBorder: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
   @runtimeProperty("ModSettings.displayName", "No police in Pacifica")
   @runtimeProperty("ModSettings.description", "NCPD doesn't patrol or respond in Pacifica. Crimes there add no heat and witnesses don't call. Come in with stars and the police turn back; the stars fade on the search timer.")
   public let pacificaNoPolice: Bool = true;
