@@ -1,4 +1,4 @@
-# Testing Threat Assessment 0.5.0 beta
+# Testing Threat Assessment 0.5.1 beta
 
 Turn on **Debug log** (Settings → Threat Assessment → General). Everything the mod decides is written
 to `bin\x64\plugins\cyber_engine_tweaks\gamelog.log` as `[ThreatAssessment]` lines. Send those lines

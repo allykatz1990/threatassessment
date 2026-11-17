@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 beta
+
+Packaging only, no gameplay changes.
+
+- The readme, license, changelog, testing guide and compatibility notes now carry the mod's name
+  (`README-ThreatAssessment.md`, `LICENSE-ThreatAssessment.txt` and so on), so they can't clash
+  with another mod's files in Vortex
+
 ## 0.5.0 beta
 
 First public beta.

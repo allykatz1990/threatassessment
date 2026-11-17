@@ -175,7 +175,7 @@ public class NCPDHSystem extends ScriptableSystem {
   }
 
   public static func Version() -> String {
-    return "0.5.0 beta";
+    return "0.5.1 beta";
   }
 
   // The mod acts only when switched on, not paused with the hotkey, and no quest is steering the police.

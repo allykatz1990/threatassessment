@@ -30,7 +30,7 @@ Everything the Nexus "Add mod" form asks for, in the order it asks.
 
 | Field | Value |
 |---|---|
-| File | `ThreatAssessment_v0.5.0-beta.zip` (Downloads folder) |
+| File | `ThreatAssessment_v0.5.1-beta.zip` (Downloads folder) |
 | File name | Threat Assessment 0.5.0 beta |
 | Version | 0.5.0-beta (Nexus versions can't contain spaces) |
 | Category | Main files |
@@ -96,7 +96,7 @@ On https://github.com/allykatz1990/threatassessment/releases/new:
 - Tag: `v0.5.0-beta` (create on publish, target `main`)
 - Title: `Threat Assessment 0.5.0 beta`
 - Tick "Set as a pre-release"
-- Attach `ThreatAssessment_v0.5.0-beta.zip`
+- Attach `ThreatAssessment_v0.5.1-beta.zip`
 - Notes: paste the 0.5.0 beta section of `CHANGELOG.md`, with this line above it:
 
 > First public beta. Requires redscript, TweakXL and Codeware. Install with Vortex or copy the `r6`

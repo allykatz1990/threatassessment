@@ -6,7 +6,7 @@ A Cyberpunk 2077 (2.5, Phantom Liberty supported) mod that makes the NCPD act li
 understaffed department it is in the lore. Petty crime gets ignored. Real trouble gets a fast,
 organised response, and only major crimes bring the heavy hitters.
 
-**Version 0.5.0 beta.** Every planned core feature is in. See [TESTING.md](TESTING.md) for what to
+**Version 0.5.1 beta.** Every planned core feature is in. See [TESTING.md](TESTING.md) for what to
 try and [CHANGELOG.md](CHANGELOG.md) for what changed.
 
 ## What it does now
