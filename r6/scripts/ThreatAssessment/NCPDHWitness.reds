@@ -189,6 +189,25 @@ public class NCPDHWitness {
     return cfg.callChanceMid;
   }
 
+  // 3 rich, 2 middle, 1 poor for the district V is in.
+  public static func WealthTier(ps: ref<PreventionSystem>) -> Int32 {
+    let district = ps.GetCurrentDistrict();
+    if !IsDefined(district) || !IsDefined(district.GetDistrictRecord()) {
+      return 2;
+    }
+    let rec: wref<District_Record> = district.GetDistrictRecord();
+    let depth = 0;
+    while IsDefined(rec) && depth < 4 {
+      let tier = NCPDHWitness.Wealth(rec.Type());
+      if tier > 0 {
+        return tier;
+      }
+      rec = rec.ParentDistrict();
+      depth += 1;
+    }
+    return 2;
+  }
+
   // 3 rich, 2 middle, 1 poor, 0 unknown (look at the parent district).
   private static func Wealth(t: gamedataDistrict) -> Int32 {
     switch t {

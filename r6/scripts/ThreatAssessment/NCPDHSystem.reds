@@ -93,6 +93,9 @@ public class NCPDHSystem extends ScriptableSystem {
   private let m_witness: ref<NCPDHWitness>;
   private let m_witnessPassUntil: Float;
   private let m_handoverLogged: Bool;
+  private let m_paused: Bool;
+  private let m_scene: Vector4;           // where the crime that started this heat happened
+  private let m_voiceTestIndex: Int32;
   private let m_heatZoneKnown: Bool;     // m_heatInDogtown is valid for the current heat
   private let m_heatInDogtown: Bool;     // the current heat was earned inside Dogtown
   private let m_vehicles: array<ref<NCPDHVehicle>>;
@@ -112,6 +115,8 @@ public class NCPDHSystem extends ScriptableSystem {
 
   private func OnAttach() -> Void {
     this.m_instanceID = RandRange(1, 2000000000);
+    GameInstance.GetCallbackSystem().RegisterCallback(n"Input/Key", this, n"OnKeyInput");
+    ModLog(n"ThreatAssessment", s"Threat Assessment \(NCPDHSystem.Version()) loaded");
     this.m_witness = new NCPDHWitness();
     this.m_corp = new NCPDHCorp();
     this.m_corp.Reset();
@@ -167,9 +172,52 @@ public class NCPDHSystem extends ScriptableSystem {
     return GameInstance.GetScriptableSystemsContainer(this.GetGameInstance()).Get(n"PreventionSystem") as PreventionSystem;
   }
 
-  // The mod acts only when switched on and no quest is steering the police.
+  public static func Version() -> String {
+    return "0.5.0 beta";
+  }
+
+  // The mod acts only when switched on, not paused with the hotkey, and no quest is steering the police.
   public func Active(ps: ref<PreventionSystem>) -> Bool {
-    return this.Config().enabled && IsDefined(ps) && ps.NCPDH_QuestFree();
+    return this.Config().enabled && !this.m_paused && IsDefined(ps) && ps.NCPDH_QuestFree();
+  }
+
+  // ---------------------------------------------------------------- pause hotkey
+  private cb func OnKeyInput(evt: ref<KeyInputEvent>) {
+    if NotEquals(evt.GetAction(), EInputAction.IACT_Press) {
+      return;
+    }
+    let key = evt.GetKey();
+    if Equals(key, EInputKey.IK_None) || NotEquals(key, this.Config().pauseKey) {
+      return;
+    }
+    let game = this.GetGameInstance();
+    if !IsDefined(GetPlayer(game)) {
+      return;
+    }
+    this.m_paused = !this.m_paused;
+    if this.m_paused {
+      this.Dissolve("paused with the hotkey");
+      NCPDHWitness.Message(game, "Threat Assessment paused");
+      ModLog(n"ThreatAssessment", "Paused with the hotkey");
+    } else {
+      NCPDHWitness.Message(game, "Threat Assessment resumed");
+      ModLog(n"ThreatAssessment", "Resumed with the hotkey");
+    }
+  }
+
+  // ---------------------------------------------------------------- quest characters
+  // Never give orders to, count or provoke over quest characters. Same rule as Weaponpunk 2077
+  // (ScriptedPuppet.IsQuest), plus quest-only character records (mq / q / sq names), because quest
+  // units can end up in the police chase list (seen: Character.mq0xx_max_tac_no_combat).
+  public static func IsQuestCharacter(unit: wref<ScriptedPuppet>) -> Bool {
+    if !IsDefined(unit) {
+      return false;
+    }
+    if unit.IsQuest() {
+      return true;
+    }
+    let name = TDBID.ToStringDEBUG(unit.GetRecordID());
+    return StrBeginsWith(name, "Character.mq") || StrBeginsWith(name, "Character.q") || StrBeginsWith(name, "Character.sq");
   }
 
   // ================================================================ crime filter
@@ -456,7 +504,7 @@ public class NCPDHSystem extends ScriptableSystem {
     while i < ArraySize(agents) {
       let a = agents[i];
       i += 1;
-      if IsDefined(a) && !a.isQuestNPC && IsDefined(a.unit) && a.unit.IsActive()
+      if IsDefined(a) && !a.isQuestNPC && IsDefined(a.unit) && a.unit.IsActive() && !NCPDHSystem.IsQuestCharacter(a.unit)
           && (includeMaxTac || !PreventionSystem.IsPreventionMaxTac(game, a.unit)) && !VehicleComponent.IsMountedToVehicle(game, a.unit) {
         let rec = this.GetUnit(a.unit.GetEntityID());
         if rec.mode != 3 {
@@ -508,9 +556,24 @@ public class NCPDHSystem extends ScriptableSystem {
     }
     this.m_eliteAnnounced = false;
     if prev == 0 && cur >= 1 {
+      // The crime scene: where the police were told the crime happened.
+      this.m_scene = ps.GetLastKnownPlayerPosition();
+      if Vector4.IsXYZZero(this.m_scene) && IsDefined(GetPlayer(this.GetGameInstance())) {
+        this.m_scene = GetPlayer(this.GetGameInstance()).GetWorldPosition();
+      }
       // Remember which side of the Dogtown border this heat was earned on.
       this.m_heatZoneKnown = true;
       this.m_heatInDogtown = NCPDHCorp.InDistrict(ps, gamedataDistrict.Dogtown);
+    }
+    if prev < 3 && cur >= 3 {
+      // Cars still heading for the crime scene now take orders from the perimeter.
+      let k = 0;
+      while k < ArraySize(this.m_vehicles) {
+        if this.m_vehicles[k].mode == 5 {
+          this.m_vehicles[k].mode = 0;
+        }
+        k += 1;
+      }
     }
     if cur >= 1 {
       this.EnsureTicking();
@@ -626,6 +689,13 @@ public class NCPDHSystem extends ScriptableSystem {
           this.WithdrawPolice(reg, here, now, this.MaxTacBarred(ps));
         }
       }
+      // 1-2 stars: police cars go to the crime scene, not to V, unless officers already see V.
+      if stage >= 1 && cfg.respondToScene && this.Active(ps) && !this.NcpdBarred(ps, stage) {
+        let sreg = PreventionSystem.GetAgentRegistry(game);
+        if IsDefined(sreg) && !sreg.IsPoliceInCombatWithPalyer() {
+          this.SceneVehicles(sreg, now);
+        }
+      }
       // Corporate squads and Barghest can answer below 3 stars, and leave after the chase.
       if stage >= 1 || this.m_corp.HasUnits() {
         this.m_corp.Tick(this, ps, stage, now, here, false);
@@ -730,7 +800,8 @@ public class NCPDHSystem extends ScriptableSystem {
         NCPDHVoice.Play(this, NCPDHVoiceEvent.Standoff, null);
       }
     }
-    this.ScheduleTick(1.0);
+    // While the ring stands it is checked twice a second, so officers can't slip far inside.
+    this.ScheduleTick(this.m_perimeterOn ? 0.5 : 1.0);
   }
 
   private func Form(vPos: Vector4, now: Float) -> Void {
@@ -764,7 +835,7 @@ public class NCPDHSystem extends ScriptableSystem {
       return false;
     }
     let unit = agent.unit;
-    if !IsDefined(unit) || !unit.IsActive() || VehicleComponent.IsMountedToVehicle(game, unit) {
+    if !IsDefined(unit) || !unit.IsActive() || VehicleComponent.IsMountedToVehicle(game, unit) || NCPDHSystem.IsQuestCharacter(unit) {
       return false;
     }
     // Roadblock crews already hold behind their own cars: leave them unless they wander inside.
@@ -821,7 +892,7 @@ public class NCPDHSystem extends ScriptableSystem {
         NCPDHSystem.SendPreset(unit, EAICombatPreset.IsCautious);
         rec.presetSent = true;
       }
-      if gap < -2.0 {
+      if gap < -1.0 {
         // Inside the ring: back out to it. Once caught, he is held in place when he gets back.
         if rec.mode != 1 {
           rec.creeps += 1;
@@ -829,7 +900,7 @@ public class NCPDHSystem extends ScriptableSystem {
         }
         let moved = Vector4.Distance(rec.target, ring) > tolerance;
         if rec.mode != 1 || moved || now - rec.sentAt > 4.0 {
-          this.SendMove(unit, rec, ring, moveMovementType.Run, now);
+          this.SendMove(unit, rec, ring, moveMovementType.Sprint, now);
         }
       } else {
         if gap > cfg.coverBand && !roadblockCrew {
@@ -1013,6 +1084,114 @@ public class NCPDHSystem extends ScriptableSystem {
     }
   }
 
+  // 1-2 stars: arriving cars drive to the crime scene and the crew gets out there to search.
+  private func SceneVehicles(registry: ref<PoliceAgentRegistry>, now: Float) -> Void {
+    let game = this.GetGameInstance();
+    if Vector4.IsXYZZero(this.m_scene) {
+      return;
+    }
+    let list = registry.GetVehicleList();
+    let i = 0;
+    while i < ArraySize(list) {
+      let agent = list[i];
+      i += 1;
+      if IsDefined(agent) && IsDefined(agent.unit) && IsDefined(agent.unit as WheeledObject) && !agent.unit.IsDestroyed() && agent.unit.HasPassengers() {
+        let veh = agent.unit;
+        let rec = this.GetVehicle(veh.GetEntityID());
+        let d = Vector4.Distance2D(veh.GetWorldPosition(), this.m_scene);
+        if rec.mode == 0 {
+          if d > 25.0 {
+            let cmd = new AIVehicleDriveToPointAutonomousCommand();
+            cmd.targetPosition = Vector4.Vector4To3(this.m_scene);
+            cmd.minimumDistanceToTarget = 8.0;
+            cmd.maxSpeed = 14.0;
+            cmd.minSpeed = 3.0;
+            cmd.clearTrafficOnPath = true;
+            cmd.forcedStartSpeed = -1.0;
+            cmd.driveDownTheRoadIndefinitely = false;
+            let evt = new AICommandEvent();
+            evt.command = cmd;
+            veh.QueueEvent(evt);
+            rec.mode = 5;
+            rec.sentAt = now;
+            this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) sent to the crime scene (\(d) m away)");
+          }
+        } else {
+          if rec.mode == 5 && (d <= 20.0 || now - rec.sentAt > 25.0) {
+            VehicleComponent.QueueEventToAllPassengers(game, veh, AIEvents.ExitVehicleEvent());
+            rec.mode = 6;
+            rec.sentAt = now;
+            this.Log(s"Police car \(EntityID.ToDebugString(rec.id)) at the crime scene, officers searching");
+          }
+        }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------- voice line test (CET console)
+  // Game.GetScriptableSystemsContainer():Get("NCPDHSystem"):VoiceTest()
+  // Each call plays the next line of every event on the nearest officer or corporate unit and logs it.
+  public func VoiceTest() -> Void {
+    let lines: array<CName>;
+    let events: array<String>;
+    let e = 0;
+    while e <= 8 {
+      let ev = NCPDHVoice.FromIndex(e);
+      let l = NCPDHVoice.Lines(ev);
+      let j = 0;
+      while j < ArraySize(l) {
+        ArrayPush(lines, l[j]);
+        ArrayPush(events, NCPDHVoice.Name(ev));
+        j += 1;
+      }
+      e += 1;
+    }
+    if ArraySize(lines) == 0 {
+      return;
+    }
+    let idx = this.m_voiceTestIndex % ArraySize(lines);
+    this.m_voiceTestIndex += 1;
+    let who = NCPDHVoice.NearestSpeaker(this);
+    if !IsDefined(who) {
+      ModLog(n"ThreatAssessment", "Voice test: no officer or corporate unit within 60 m");
+      return;
+    }
+    GameObject.PlayVoiceOver(who, lines[idx], n"ThreatAssessment");
+    ModLog(n"ThreatAssessment", s"Voice test \(idx + 1)/\(ArraySize(lines)): \(events[idx]) line \(NameToString(lines[idx])) by \(TDBID.ToStringDEBUG(who.GetRecordID()))");
+  }
+
+  // V hit an NPC. If it is a corporation's guard out in the city, that corporation sends a squad.
+  public func OnPlayerHitNPC(victim: wref<ScriptedPuppet>) -> Void {
+    let cfg = this.Config();
+    if !cfg.corpProvoke || !IsDefined(victim) || !IsDefined(this.m_corp) {
+      return;
+    }
+    let corp = NCPDHCorp.ChoiceForAffiliation(victim);
+    if Equals(corp, NCPDHCorpChoice.Off) {
+      return;
+    }
+    if Equals(corp, NCPDHCorpChoice.Barghest) && !cfg.barghestResponse {
+      return;
+    }
+    if NotEquals(corp, NCPDHCorpChoice.Barghest) && !cfg.corpResponse {
+      return;
+    }
+    let ps = this.Prevention();
+    if !this.Active(ps) || NCPDHSystem.IsQuestCharacter(victim) || this.m_corp.IsOurs(victim.GetEntityID()) {
+      return;
+    }
+    // Not inside their own restricted or dangerous areas: those fights are the base game's.
+    let player = GetPlayer(this.GetGameInstance());
+    if !IsDefined(player) || player.GetPlayerStateMachineBlackboard().GetInt(GetAllBlackboardDefs().PlayerStateMachine.Zones) >= 3 {
+      return;
+    }
+    this.m_corp.Provoke(this, corp, this.Now());
+  }
+
+  public func Corp() -> ref<NCPDHCorp> {
+    return this.m_corp;
+  }
+
   private func GetVehicle(id: EntityID) -> ref<NCPDHVehicle> {
     let i = 0;
     while i < ArraySize(this.m_vehicles) {
@@ -1095,7 +1274,7 @@ public class NCPDHSystem extends ScriptableSystem {
         while i < ArraySize(agents) {
           let agent = agents[i];
           i += 1;
-          if IsDefined(agent) && !agent.isQuestNPC && IsDefined(agent.unit) && agent.unit.IsActive() {
+          if IsDefined(agent) && !agent.isQuestNPC && IsDefined(agent.unit) && agent.unit.IsActive() && !NCPDHSystem.IsQuestCharacter(agent.unit) {
             let rec = this.GetUnit(agent.unit.GetEntityID());
             if (rec.mode == 1 || rec.mode == 2 || rec.mode == 4) && NCPDHSystem.IsLowRank(agent.unit) && RandF() < chance {
               this.Flee(agent.unit, rec, vPos, now, true);

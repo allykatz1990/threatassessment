@@ -16,6 +16,8 @@ values become the base this mod scales from.
 | `NotifyVehicleExplosion` (static) | Destroyed police vehicles count as major crimes | – |
 | `OnCrimeWitnessRequest` | Witness calls: petty ones ignored, others must finish a timed call | – |
 | `CallPolice.Activate` (behavior task) | Remembers who is calling; always calls the original | They Will Remember 3.0.1 |
+| `DamageSystem.ProcessLocalizedDamage` | V hitting a corporation's guards (provocation) | Weaponpunk 2077 |
+| `PreventionSystem.execInstructionSafe` (called, not wrapped) | Clearing heat at the Dogtown border | – |
 | `TryUpdateStarState` | Heat freeze while the perimeter holds | – |
 | `ChangeHeatStage` | Tells the mod when heat changes | Cop Killer 2.42 |
 | `GetDataTableForCurrentHeat` | Response size per star | – |
@@ -37,6 +39,12 @@ They Will Remember 3.0.1, NCA Lite 2.3.3, Reinforcements System 1.2.1, Reinforce
 Enemies of Night City, Cyber Enemies 1.0.2, Lifepath Bonuses 4.3.4, NightCityTrafficOverhaul 3.05,
 DynamicCityDensity 1.5, ImmersiveShootingAI, Stealthrunner, BetterStealth, CollateralDamage 2.5,
 Trace Position Overhaul, Spawned NPC Post Combat Fix. None replaces a function listed above.
+
+Roaming patrols: when the always-loaded world sector loads, the weights of police entries in the
+crowd registry (`worldCommunityRegistryNode`) are scaled. Nothing is replaced, so Night City Alive's
+and Night City Traffic Overhaul's edits to the same registry are kept; the scaling stacks on top.
+
+Pause hotkey: Codeware `Input/Key` callback (keyboard only, default F7).
 
 Corporate squads: spawned with Codeware's `DynamicEntitySystem`, tagged `ThreatAssessment` and
 `ThreatAssessment.Corp`, from base-game Arasaka, Militech and Kang Tao character records (missing

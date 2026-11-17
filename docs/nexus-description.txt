@@ -1,0 +1,45 @@
+[size=5][b]Threat Assessment – Tactical Police & Jurisdiction Overhaul[/b][/size]
+[i]Version 0.5.0 beta[/i]
+
+Night City's police are underfunded and understaffed. This mod makes them act like it. Petty crime gets ignored, real trouble gets an organised response, and the city's corporations police their own turf.
+
+[size=4][b]Features[/b][/size]
+[list]
+[*][b]Petty crime filter[/b] – a civilian caught in a crossfire or clipped at the roadside is not a police matter. Heat starts after several deaths in a short time, or any attack on police.
+[*][b]Witnesses have to finish the call[/b] – stop the caller in time and nobody comes. People in rich districts call; in Santo Domingo, most don't bother.
+[*][b]Thin response, then a big one[/b] – a couple of slow cars at 1-2 stars. At 3 stars the department commits.
+[*][b]Rich districts first[/b] – City Center and Westbrook get more officers, sooner.
+[*][b]Police go to the crime scene[/b], not straight to you.
+[*][b]Fewer patrols[/b] – fewer police cars in traffic and officers on foot.
+[*][b]3-star containment perimeter[/b] – officers ring you at 30 m, take cover behind walls and their own cars, and hold. Heat freezes while you're inside. Break out and run; the more cops you've dropped, the more likely the rookies flee.
+[*][b]Only the heavy hitters go in[/b] – at 5 stars, MaxTac and heavily armored units enter the ring.
+[*][b]Corporate jurisdictions[/b] – in Corpo Plaza, Downtown, Arasaka Waterfront and North Oak, NCPD hands over to Arasaka, Militech or Kang Tao at 3-4 stars and comes back with MaxTac at 5. One corporation per chase.
+[*][b]Corporations protect their own[/b] – hit their guards in the street and a squad comes for you, stars or not.
+[*][b]Dogtown[/b] – NCPD has no jurisdiction. Barghest answers instead, and heat stops at the border both ways.
+[*][b]Pacifica[/b] – NCPD doesn't come.
+[*][b]Longer searches[/b] – the police keep looking for a while before they give up.
+[*][b]Voice lines[/b] – officers call out the perimeter, breakouts and MaxTac in their own voices.
+[*][b]Quest safe[/b] – stays out of missions, never touches quest characters, F7 pauses everything.
+[*][b]Every feature is a setting.[/b]
+[/list]
+
+[size=4][b]Requirements[/b][/size]
+[list]
+[*]redscript
+[*]TweakXL
+[*]Codeware
+[*]Optional: Mod Settings or Mod Configuration Menu
+[/list]
+No REDmod, no archives.
+
+[size=4][b]Compatibility[/b][/size]
+Every game function is wrapped, never replaced. Tested alongside They Will Remember, Night City Alive, Gang Retaliation, Cop Killer and Night City Traffic Overhaul. Night City Alive users: skip its optional "Sensitive Prevention" file. Full list on GitHub.
+
+[size=4][b]Open source[/b][/size]
+GPL-3.0. Source, issue tracker and testing guide: https://github.com/allykatz1990/threatassessment
+Permissions are open: you may share, modify and redistribute, but anything built from it must stay open source under GPL-3.0.
+
+The code was written with AI assistance (Claude).
+
+[size=4][b]Credits and inspiration[/b][/size]
+Ideas only, no code taken: NCPD and MaxTac Spawn Tweak, Someone Call The Police, Stealth Prevention, Law Enforcement Overhaul, NCPD Prevention Police Enhancement, Eyes on V, NCPD Bribe (Ghxst Protocol), NCPD Duty Expansion, Vehicle Theft and Stock Market Economy Overhaul, No immediately police reinforcements, No Police Dispatch, Lore-Accurate Adam Smasher, Night City Alive.

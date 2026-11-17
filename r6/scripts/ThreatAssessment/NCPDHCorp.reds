@@ -30,6 +30,7 @@ public class NCPDHCorpUnit {
   public let ready: Bool;     // made hostile and given V as a target
   public let isMech: Bool;
   public let down: Bool;      // killed or knocked out, already counted
+  public let stayUntil: Float; // provoked squads hunt V until then, even with no heat
 }
 
 public class NCPDHCorp {
@@ -39,6 +40,7 @@ public class NCPDHCorp {
   private let m_lastWave: Float;
   private let m_announced: Bool;
   private let m_heldForGangs: Bool;
+  private let m_lastProvoke: Float;
 
   public func Reset() -> Void {
     this.m_corp = NCPDHCorpChoice.Off;
@@ -329,7 +331,7 @@ public class NCPDHCorp {
             this.MakeHostile(unit, player);
             u.ready = true;
           }
-          if !active {
+          if !active && now > u.stayUntil {
             // Chase over (or quest took over): leave once out of the way.
             if dist > 60.0 {
               des.DeleteEntity(u.id);
@@ -344,7 +346,90 @@ public class NCPDHCorp {
       }
       i -= 1;
     }
+    if stage == 0 && !this.HasUnits() {
+      this.Reset();   // free the corporation lock once a provoked squad is gone
+    }
     return valid;
+  }
+
+  public func IsOurs(id: EntityID) -> Bool {
+    let i = 0;
+    while i < ArraySize(this.m_units) {
+      if Equals(this.m_units[i].id, id) {
+        return true;
+      }
+      i += 1;
+    }
+    return false;
+  }
+
+  public func Nearest(pos: Vector4, maxDist: Float) -> wref<ScriptedPuppet> {
+    let best: wref<ScriptedPuppet>;
+    let des = GameInstance.GetDynamicEntitySystem();
+    if !IsDefined(des) {
+      return best;
+    }
+    let bestD = maxDist;
+    let i = 0;
+    while i < ArraySize(this.m_units) {
+      let unit = des.GetEntity(this.m_units[i].id) as ScriptedPuppet;
+      if IsDefined(unit) && unit.IsActive() {
+        let d = Vector4.Distance(unit.GetWorldPosition(), pos);
+        if d < bestD {
+          bestD = d;
+          best = unit;
+        }
+      }
+      i += 1;
+    }
+    return best;
+  }
+
+  // V attacked one of this corporation's guards out in the city: it sends a squad, heat or not.
+  // One corporation per engagement still applies.
+  public func Provoke(sys: ref<NCPDHSystem>, corp: NCPDHCorpChoice, now: Float) -> Void {
+    let cfg = sys.Config();
+    if now - this.m_lastProvoke < cfg.provokeCooldown {
+      return;
+    }
+    if NotEquals(this.m_corp, NCPDHCorpChoice.Off) && NotEquals(this.m_corp, corp) {
+      return;
+    }
+    let player = GetPlayer(sys.GetGameInstance());
+    if !IsDefined(player) {
+      return;
+    }
+    this.m_lastProvoke = now;
+    this.m_corp = corp;
+    let before = ArraySize(this.m_units);
+    this.SpawnWave(sys, player.GetWorldPosition(), 3, cfg.provokeSize, now);
+    let i = before;
+    while i < ArraySize(this.m_units) {
+      this.m_units[i].stayUntil = now + cfg.provokeStay;
+      i += 1;
+    }
+    sys.Log(s"V attacked \(NCPDHCorp.Name(corp)) security: squad sent");
+    NCPDHWitness.Message(sys.GetGameInstance(), s"\(NCPDHCorp.Name(corp)) security is on its way");
+    sys.EnsureTicking();
+  }
+
+  // Which corporation a character belongs to, if any of the ones this mod sends.
+  public static func ChoiceForAffiliation(unit: wref<ScriptedPuppet>) -> NCPDHCorpChoice {
+    let rec = TweakDBInterface.GetCharacterRecord(unit.GetRecordID());
+    if !IsDefined(rec) || !IsDefined(rec.Affiliation()) {
+      return NCPDHCorpChoice.Off;
+    }
+    switch rec.Affiliation().Type() {
+      case gamedataAffiliation.Arasaka:
+        return NCPDHCorpChoice.Arasaka;
+      case gamedataAffiliation.Militech:
+        return NCPDHCorpChoice.Militech;
+      case gamedataAffiliation.KangTao:
+        return NCPDHCorpChoice.KangTao;
+      case gamedataAffiliation.Barghest:
+        return NCPDHCorpChoice.Barghest;
+    }
+    return NCPDHCorpChoice.Off;
   }
 
   // Any corporate unit fighting V right now, close enough to matter.

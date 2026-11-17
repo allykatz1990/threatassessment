@@ -43,6 +43,20 @@ public abstract class NCPDHVoice {
     return 0;
   }
 
+  public static func FromIndex(i: Int32) -> NCPDHVoiceEvent {
+    switch i {
+      case 1: return NCPDHVoiceEvent.PerimeterSet;
+      case 2: return NCPDHVoiceEvent.Standoff;
+      case 3: return NCPDHVoiceEvent.AttackInRing;
+      case 4: return NCPDHVoiceEvent.BreakOut;
+      case 5: return NCPDHVoiceEvent.Flee;
+      case 6: return NCPDHVoiceEvent.EliteEnter;
+      case 7: return NCPDHVoiceEvent.GiveUp;
+      case 8: return NCPDHVoiceEvent.Calling;
+    }
+    return NCPDHVoiceEvent.Warning;
+  }
+
   public static func Name(e: NCPDHVoiceEvent) -> String {
     switch e {
       case NCPDHVoiceEvent.Warning: return "Warning";
@@ -111,7 +125,7 @@ public abstract class NCPDHVoice {
     }
     let who = speaker;
     if !IsDefined(who) {
-      who = NCPDHVoice.NearestOfficer(sys.GetGameInstance());
+      who = NCPDHVoice.NearestSpeaker(sys);
     }
     if !IsDefined(who) {
       sys.Log(s"Voice \(NCPDHVoice.Name(e)): no officer near enough to speak");
@@ -125,6 +139,25 @@ public abstract class NCPDHVoice {
     GameObject.PlayVoiceOver(who, line, n"ThreatAssessment");
     sys.SetVoiceLastTime(e, now);
     sys.Log(s"Voice \(NCPDHVoice.Name(e)): \(NameToString(line)) by \(EntityID.ToDebugString(who.GetEntityID())) (\(TDBID.ToStringDEBUG(who.GetRecordID())))");
+  }
+
+  // The closest police officer or corporate / Barghest unit within 60 m of V.
+  public static func NearestSpeaker(sys: ref<NCPDHSystem>) -> wref<ScriptedPuppet> {
+    let game = sys.GetGameInstance();
+    let best = NCPDHVoice.NearestOfficer(game);
+    let player = GetPlayer(game);
+    if !IsDefined(player) || !IsDefined(sys.Corp()) {
+      return best;
+    }
+    let corp = sys.Corp().Nearest(player.GetWorldPosition(), 60.0);
+    if !IsDefined(corp) {
+      return best;
+    }
+    if !IsDefined(best) {
+      return corp;
+    }
+    let vPos = player.GetWorldPosition();
+    return Vector4.Distance(corp.GetWorldPosition(), vPos) < Vector4.Distance(best.GetWorldPosition(), vPos) ? corp : best;
   }
 
   // The closest active police officer on foot within 60 m of V, among the units in the chase.

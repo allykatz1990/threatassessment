@@ -57,7 +57,7 @@ public abstract class NCPDHResponse {
 
   // Scales one heat table for its star level. With allowed false (mod off, or a quest steering the
   // police) the original values are put back.
-  public static func Apply(sys: ref<NCPDHSystem>, table: ref<PreventionHeatTable_Record>, stage: Int32, allowed: Bool, zone: Int32) -> Void {
+  public static func Apply(sys: ref<NCPDHSystem>, table: ref<PreventionHeatTable_Record>, stage: Int32, allowed: Bool, zone: Int32, wealth: Int32) -> Void {
     let cache = NCPDHTweakCache.Get();
     if !IsDefined(sys) || !IsDefined(table) || !IsDefined(cache) || stage < 1 {
       return;
@@ -67,6 +67,17 @@ public abstract class NCPDHResponse {
     let delayPct = 100;
     if allowed && cfg.responseScaling {
       countPct = NCPDHResponse.CountPercent(cfg, stage);
+      // District wealth: rich districts get more officers, sooner; poor ones fewer, later.
+      if cfg.wealthScaling && (zone == 0 || zone == 1) {
+        if wealth == 3 {
+          countPct = countPct * cfg.richCount / 100;
+          delayPct = delayPct * cfg.richDelay / 100;
+        }
+        if wealth == 1 {
+          countPct = countPct * cfg.poorCount / 100;
+          delayPct = delayPct * cfg.poorDelay / 100;
+        }
+      }
       if zone == 3 {
         // Pacifica: nobody comes (at 5 stars MaxTac too, unless allowed in the settings).
         countPct = (stage >= 5 && !cfg.pacificaNoMaxTac) ? countPct : 0;

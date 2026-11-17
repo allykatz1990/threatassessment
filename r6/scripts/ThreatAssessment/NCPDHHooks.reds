@@ -13,6 +13,7 @@
 //   PreventionSystem.NotifyVehicleExplosion         destroyed police vehicles count as major crimes
 //   PreventionSystem.OnCrimeWitnessRequest          witness calls: petty ones ignored, others timed
 //   CallPolice.Activate                             remembers who is calling (NCPDHWitness.reds)
+//   DamageSystem.ProcessLocalizedDamage             V hitting a corporation's guards (provocation)
 //   PreventionSystem.TryUpdateStarState             heat freeze while the perimeter holds
 //   PreventionSystem.ChangeHeatStage                tells the mod when the heat changes
 //   PreventionSystem.GetDataTableForCurrentHeat     response size per star (NCPDHResponse.reds)
@@ -170,7 +171,7 @@ private final func GetDataTableForCurrentHeat() -> Void {
   let sys = NCPDHSystem.Get(this.GetGameInstance());
   if IsDefined(sys) && IsDefined(this.m_preventionDataMatrix) {
     // Scale the table before the game reads it, so tickets and car limits use the new values.
-    NCPDHResponse.Apply(sys, this.GetDataTableForHeat(this.m_heatStage), NCPDHSystem.Stage(this.m_heatStage), sys.Active(this), sys.Zone(this));
+    NCPDHResponse.Apply(sys, this.GetDataTableForHeat(this.m_heatStage), NCPDHSystem.Stage(this.m_heatStage), sys.Active(this), sys.Zone(this), NCPDHWitness.WealthTier(this));
   }
   wrappedMethod();
 }
@@ -214,4 +215,25 @@ private final func OnPreventionSearchingStatusRequest(evt: ref<PreventionSearchi
     }
   }
   wrappedMethod(evt);
+}
+
+// ---------------------------------------------------------------- corporations protect their own
+
+@wrapMethod(DamageSystem)
+private final func ProcessLocalizedDamage(hitEvent: ref<gameHitEvent>) -> Void {
+  wrappedMethod(hitEvent);
+  if !IsDefined(hitEvent) || !IsDefined(hitEvent.attackData) {
+    return;
+  }
+  let instigator = hitEvent.attackData.GetInstigator();
+  if !IsDefined(instigator) || !instigator.IsPlayer() {
+    return;
+  }
+  let victim = hitEvent.target as ScriptedPuppet;
+  if IsDefined(victim) {
+    let sys = NCPDHSystem.Get(victim.GetGame());
+    if IsDefined(sys) {
+      sys.OnPlayerHitNPC(victim);
+    }
+  }
 }

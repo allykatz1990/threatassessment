@@ -6,8 +6,8 @@ A Cyberpunk 2077 (2.5, Phantom Liberty supported) mod that makes the NCPD act li
 understaffed department it is in the lore. Petty crime gets ignored. Real trouble gets a fast,
 organised response, and only major crimes bring the heavy hitters.
 
-**Status: early beta.** The core heat rules and the 3-star perimeter are in and being tested.
-Corporate jurisdictions, district scaling and the rest of the plan below are still to come.
+**Version 0.5.0 beta.** Every planned core feature is in. See [TESTING.md](TESTING.md) for what to
+try and [CHANGELOG.md](CHANGELOG.md) for what changed.
 
 ## What it does now
 
@@ -24,6 +24,12 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
   Ordinary crimes add nothing from 3 stars on.
 - **A thin response, then a big one.** 1 and 2 stars bring a few officers, and slowly. At 3 stars the
   department commits: twice the base game's officers and cars, all sent to the perimeter.
+- **Rich districts first.** City Center and Westbrook get more officers, sooner. Santo Domingo and
+  the Badlands get fewer, later.
+- **Police go to the crime scene.** At 1 and 2 stars, cars drive to where the crime happened and the
+  officers search from there, instead of driving straight at you.
+- **Fewer patrols.** Half as many police cars in traffic and officers on foot patrol by default. Cops
+  placed at crime scenes and checkpoints by the game stay.
 - **Heat that lasts.** Once the police lose you they keep searching for at least 5 in-game minutes
   before they give up.
 - **Major crimes for 4 and 5 stars.** Only destroyed police vehicles, explosions on police, and a high
@@ -42,23 +48,25 @@ Corporate jurisdictions, district scaling and the rest of the plan below are sti
   corporation (one for one) and MaxTac. Arasaka, Militech or Kang Tao, or a random one on shared
   ground. Only one corporation answers per chase. Heavier units at 4 stars (Militech brings
   drones), elites and a mech at 5. They hold the perimeter like the police, and their elites go in
-  with MaxTac. Every district can be set to any corporation or to NCPD only.
+  with MaxTac. Every district can be set to any corporation or to NCPD only. Attack a corporation's
+  guards out in the city and it sends a squad after you even with no stars.
 - **Dogtown and Pacifica.** NCPD isn't allowed in Dogtown: Barghest answers instead, from 1 star,
   with its elites and exo suits at 5 stars, when MaxTac also flies in. NCPD doesn't come to Pacifica
   at all: crimes there add no heat, witnesses don't call, and police chasing you turn back at the
   border. Dogtown is its own jurisdiction: cross its border either way and your heat is gone. NCPD
   heat never follows you in, and Barghest heat never follows you out.
-- **Officer voice lines.** Officers call out the perimeter, breakouts, fleeing, MaxTac arriving and
-  giving up, in their own voices, using the game's own lines.
-- **Quest safe.** The mod does nothing while a quest is controlling the police, and never gives
-  orders to quest characters.
+- **Officer voice lines.** Officers and corporate soldiers call out the perimeter, breakouts,
+  fleeing, MaxTac arriving and giving up, in their own voices, using the game's own lines.
+- **Quest safe.** The mod does nothing while a quest is controlling the police, never gives orders to
+  or counts quest characters, and never spawns squads inside a corporation's own restricted areas.
+  A pause key (default F7) switches everything off and back on in a moment.
 - **Every feature has a setting.** All settings apply live.
 
-## Planned
+## Planned after 0.5
 
-Response to the crime scene instead of the player, fewer roaming
-patrols, district wealth scaling, corporations answering attacks on their own guards at any heat,
-optional bribes, and deeper integration with They Will Remember and Night City Alive.
+Optional toggles (bribes, panic investigation, distance-based escape, no heat for unseen quickhacks,
+sticky heat) and deeper integration with They Will Remember and Night City Alive (self-defense rule,
+gang reputation and witnesses, disguises).
 
 ![Features](features.jpg)
 
@@ -76,8 +84,9 @@ the game runs.
 
 ## Install
 
-Copy the `r6` folder into your Cyberpunk 2077 game folder, or install the release zip with your mod
-manager.
+Install the release zip with your mod manager, or copy its `r6` folder into your Cyberpunk 2077
+game folder. Some settings (patrol numbers) apply after restarting the game; the settings menu says
+which.
 
 ## Compatibility
 

@@ -24,6 +24,12 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.description", "Writes every heat decision, perimeter change and voice line to the ThreatAssessment log (CET gamelog.log) for testing and bug reports.")
   public let debugLog: Bool = true;
 
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "General")
+  @runtimeProperty("ModSettings.displayName", "Pause key (keyboard)")
+  @runtimeProperty("ModSettings.description", "Press to pause or resume everything this mod does, for example if a mission behaves oddly. A message shows the new state. The setting above stays as it is.")
+  public let pauseKey: EInputKey = EInputKey.IK_F7;
+
   // ------------------------------------------------------------------ Petty crime filter
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Petty crime filter")
@@ -128,6 +134,74 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.min", "0")
   @runtimeProperty("ModSettings.max", "100")
   public let plateauLeak: Int32 = 0;
+
+  // ------------------------------------------------------------------ District wealth
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "District wealth")
+  @runtimeProperty("ModSettings.displayName", "Response depends on the district")
+  @runtimeProperty("ModSettings.description", "Rich districts get a faster, bigger police response; poor districts get fewer officers who take longer to come. Works on top of the per-star numbers.")
+  public let wealthScaling: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "District wealth")
+  @runtimeProperty("ModSettings.displayName", "Rich districts: officers (percent)")
+  @runtimeProperty("ModSettings.description", "City Center and Westbrook.")
+  @runtimeProperty("ModSettings.step", "5")
+  @runtimeProperty("ModSettings.min", "25")
+  @runtimeProperty("ModSettings.max", "300")
+  public let richCount: Int32 = 125;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "District wealth")
+  @runtimeProperty("ModSettings.displayName", "Rich districts: time between cars (percent)")
+  @runtimeProperty("ModSettings.description", "Lower is faster.")
+  @runtimeProperty("ModSettings.step", "5")
+  @runtimeProperty("ModSettings.min", "25")
+  @runtimeProperty("ModSettings.max", "300")
+  public let richDelay: Int32 = 75;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "District wealth")
+  @runtimeProperty("ModSettings.displayName", "Poor districts: officers (percent)")
+  @runtimeProperty("ModSettings.description", "Santo Domingo, the Badlands (Pacifica and Dogtown have their own rules).")
+  @runtimeProperty("ModSettings.step", "5")
+  @runtimeProperty("ModSettings.min", "25")
+  @runtimeProperty("ModSettings.max", "300")
+  public let poorCount: Int32 = 60;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "District wealth")
+  @runtimeProperty("ModSettings.displayName", "Poor districts: time between cars (percent)")
+  @runtimeProperty("ModSettings.description", "Higher is slower.")
+  @runtimeProperty("ModSettings.step", "5")
+  @runtimeProperty("ModSettings.min", "25")
+  @runtimeProperty("ModSettings.max", "300")
+  public let poorDelay: Int32 = 150;
+
+  // ------------------------------------------------------------------ Crime scene and patrols
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Crime scene and patrols")
+  @runtimeProperty("ModSettings.displayName", "Police go to the crime scene")
+  @runtimeProperty("ModSettings.description", "At 1 and 2 stars, arriving police cars drive to where the crime happened and the officers search from there, instead of driving straight at you.")
+  public let respondToScene: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Crime scene and patrols")
+  @runtimeProperty("ModSettings.displayName", "Police cars in traffic (percent)")
+  @runtimeProperty("ModSettings.description", "How many NCPD cars drive around in normal traffic, compared with the base game (and traffic mods). 0 removes them. Applies after restarting the game.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let patrolCars: Int32 = 50;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Crime scene and patrols")
+  @runtimeProperty("ModSettings.displayName", "Officers on foot patrol (percent)")
+  @runtimeProperty("ModSettings.description", "How many NCPD officers walk the streets, compared with the base game. 0 removes them. Officers placed at crime scenes and checkpoints by the game are not affected. Applies after restarting the game.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let patrolFoot: Int32 = 50;
 
   // ------------------------------------------------------------------ Search
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -461,6 +535,39 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.min", "10")
   @runtimeProperty("ModSettings.max", "100")
   public let corpNcpdShare: Int32 = 100;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Corporations protect their own")
+  @runtimeProperty("ModSettings.description", "Attacking a corporation's guards out in the city (Arasaka, Militech, Kang Tao, Barghest) brings a squad of theirs at any heat level. Not inside their own restricted areas, in missions or against quest characters.")
+  public let corpProvoke: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Squad size when provoked")
+  @runtimeProperty("ModSettings.description", "How many units the corporation sends.")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "1")
+  @runtimeProperty("ModSettings.max", "12")
+  public let provokeSize: Int32 = 4;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "Time between provoked squads (seconds)")
+  @runtimeProperty("ModSettings.description", "The shortest time before the same thing can bring another squad.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "30")
+  @runtimeProperty("ModSettings.max", "600")
+  public let provokeCooldown: Float = 120.0;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Corporate response")
+  @runtimeProperty("ModSettings.displayName", "How long a provoked squad hunts you (seconds)")
+  @runtimeProperty("ModSettings.description", "After this they leave once out of sight.")
+  @runtimeProperty("ModSettings.step", "10")
+  @runtimeProperty("ModSettings.min", "30")
+  @runtimeProperty("ModSettings.max", "600")
+  public let provokeStay: Float = 180.0;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Corporate response")
