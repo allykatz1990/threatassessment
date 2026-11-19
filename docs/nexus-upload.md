@@ -1,4 +1,4 @@
-# Nexus upload kit – Threat Assessment 0.5.0 beta
+# Nexus upload kit – Threat Assessment 0.6.0 beta
 
 Everything the Nexus "Add mod" form asks for, in the order it asks.
 
@@ -8,7 +8,7 @@ Everything the Nexus "Add mod" form asks for, in the order it asks.
 |---|---|
 | Name | Threat Assessment - Tactical Police and Jurisdiction Overhaul |
 | Author | allykatz1990 |
-| Version | 0.5.0 beta |
+| Version | 0.6.0 beta |
 | Category | Gameplay |
 | Language | English |
 | Adult content | No |
@@ -30,11 +30,11 @@ Everything the Nexus "Add mod" form asks for, in the order it asks.
 
 | Field | Value |
 |---|---|
-| File | `ThreatAssessment_v0.5.1-beta.zip` (Downloads folder) |
-| File name | Threat Assessment 0.5.0 beta |
-| Version | 0.5.0-beta (Nexus versions can't contain spaces) |
+| File | `ThreatAssessment_v0.6.0-beta.zip` (Downloads folder) |
+| File name | Threat Assessment 0.6.0 beta |
+| Version | 0.6.0-beta (Nexus versions can't contain spaces) |
 | Category | Main files |
-| Description | First public beta. Install with Vortex or copy the r6 folder into the game folder. |
+| Description | Automatic compatibility checks (NCPD Duty Expansion), new defaults from testing. Install with Vortex or copy the r6 folder into the game folder. |
 
 The zip installs to `r6\scripts\ThreatAssessment\`. The readme, changelog, testing guide, license
 and compatibility notes are inside that folder with the mod's name in their file names
@@ -93,13 +93,13 @@ Overhaul.
 
 On https://github.com/allykatz1990/threatassessment/releases/new:
 
-- Tag: `v0.5.0-beta` (create on publish, target `main`)
-- Title: `Threat Assessment 0.5.0 beta`
+- Tag: `v0.6.0-beta` (create on publish, target `main`)
+- Title: `Threat Assessment 0.6.0 beta`
 - Tick "Set as a pre-release"
-- Attach `ThreatAssessment_v0.5.1-beta.zip`
-- Notes: paste the 0.5.0 beta section of `CHANGELOG.md`, with this line above it:
+- Attach `ThreatAssessment_v0.6.0-beta.zip`
+- Notes: paste the 0.6.0 beta section of `CHANGELOG.md`, with this line above it:
 
-> First public beta. Requires redscript, TweakXL and Codeware. Install with Vortex or copy the `r6`
+> Beta update. Requires redscript, TweakXL and Codeware. Install with Vortex or copy the `r6`
 > folder into the game folder. Testing guide: TESTING.md.
 
 ## 8. Before you click publish

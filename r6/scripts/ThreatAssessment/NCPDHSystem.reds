@@ -13,6 +13,8 @@
 //   3. The 3-star perimeter: a ring of officers that follows V and holds instead of rushing in.
 //   4. Officers fleeing a breakout.
 //   5. Voice lines for each of those moments (NCPDHVoice.reds).
+//   6. Compatibility gates (0.6.0): features another police mod may also handle check
+//      CompatOurs() next to their own switch. Detection and decisions live in NCPDHCompat.reds.
 //
 // Quest safety: nothing here runs while a quest controls the police (see NCPDH_QuestFree in
 // NCPDHHooks.reds), and units the game flags as quest NPCs are never given orders.
@@ -91,6 +93,7 @@ public class NCPDHSystem extends ScriptableSystem {
   private let m_units: array<ref<NCPDHUnit>>;
   private let m_corp: ref<NCPDHCorp>;
   private let m_witness: ref<NCPDHWitness>;
+  private let m_compat: ref<NCPDHCompat>;  // other police mods found, and who handles what (NCPDHCompat.reds)
   private let m_witnessPassUntil: Float;
   private let m_handoverLogged: Bool;
   private let m_paused: Bool;
@@ -121,6 +124,8 @@ public class NCPDHSystem extends ScriptableSystem {
     this.m_witness = new NCPDHWitness();
     this.m_corp = new NCPDHCorp();
     this.m_corp.Reset();
+    this.m_compat = new NCPDHCompat();
+    this.m_compat.Init();
     this.m_lastPettyTime = -10000.0;
     this.m_lastSeriousTime = -10000.0;
     this.m_brokenAt = -10000.0;
@@ -133,6 +138,26 @@ public class NCPDHSystem extends ScriptableSystem {
       ArrayPush(this.m_voiceLast, -10000.0);
       i += 1;
     }
+  }
+
+  // A save finished loading and V exists: report the compatibility decisions once the HUD is up.
+  private func OnPlayerAttach(request: ref<PlayerAttachRequest>) -> Void {
+    this.Compat().ScheduleAnnounce(this);
+  }
+
+  public func Compat() -> ref<NCPDHCompat> {
+    if !IsDefined(this.m_compat) {
+      this.m_compat = new NCPDHCompat();
+      this.m_compat.Init();
+    }
+    return this.m_compat;
+  }
+
+  // True when Threat Assessment runs its own version of an area another mod may also handle
+  // (Mod Settings > Compatibility). Every feature in such an area checks this next to its own
+  // on/off switch. ps lets the chase-start check follow the other mod's per-district settings.
+  public func CompatOurs(area: NCPDHCompatArea, ps: ref<PreventionSystem>) -> Bool {
+    return NCPDHCompat.Ours(this.Config(), area, ps);
   }
 
   public func Config() -> ref<NCPDHConfig> {
@@ -175,7 +200,7 @@ public class NCPDHSystem extends ScriptableSystem {
   }
 
   public static func Version() -> String {
-    return "0.5.1 beta";
+    return "0.6.0 beta";
   }
 
   // The mod acts only when switched on, not paused with the hotkey, and no quest is steering the police.
@@ -237,7 +262,9 @@ public class NCPDHSystem extends ScriptableSystem {
     if !request.isTargetPrevention {
       // ---- civilians (and anything else the base game reports that is not police)
       if stage == 0 {
-        if !cfg.pettyFilter {
+        // Compatibility: another mod may decide what starts a chase (NCPDHCompat.reds). Then the
+        // base game's score is passed through untouched, as if the filter were switched off.
+        if !cfg.pettyFilter || !this.CompatOurs(NCPDHCompatArea.ChaseStart, ps) {
           return delta;
         }
         if explosive {
@@ -326,9 +353,10 @@ public class NCPDHSystem extends ScriptableSystem {
   }
 
   // A witness call about a crime the filter just ignored does not start a chase.
-  public func ShouldIgnoreWitness() -> Bool {
+  // ps added in 0.6.0 for the compatibility check (chase start may belong to another mod).
+  public func ShouldIgnoreWitness(ps: ref<PreventionSystem>) -> Bool {
     let cfg = this.Config();
-    if !cfg.pettyFilter || !cfg.pettyWitness {
+    if !cfg.pettyFilter || !cfg.pettyWitness || !this.CompatOurs(NCPDHCompatArea.ChaseStart, ps) {
       return false;
     }
     let now = this.Now();
@@ -566,6 +594,9 @@ public class NCPDHSystem extends ScriptableSystem {
       // Remember which side of the Dogtown border this heat was earned on.
       this.m_heatZoneKnown = true;
       this.m_heatInDogtown = NCPDHCorp.InDistrict(ps, gamedataDistrict.Dogtown);
+      // And NCPD Duty Expansion's Sticky Heat on each side, in case V crosses before the next
+      // tick (NCPDHCompat.reds). Does nothing without that mod.
+      this.Compat().SnapshotSticky(ps);
     }
     if prev < 3 && cur >= 3 {
       // Cars still heading for the crime scene now take orders from the perimeter.
@@ -605,7 +636,8 @@ public class NCPDHSystem extends ScriptableSystem {
   // Seconds the search must still run (in-game or real seconds, by the setting).
   public func SearchTimeLeft() -> Float {
     let cfg = this.Config();
-    if !cfg.longSearch {
+    // Compatibility: another mod may own the search time (NCPDHCompat.reds). 0 = no extra search.
+    if !cfg.longSearch || !this.CompatOurs(NCPDHCompatArea.Search, this.Prevention()) {
       return 0.0;
     }
     if this.m_searchStart < 0.0 {
@@ -660,12 +692,19 @@ public class NCPDHSystem extends ScriptableSystem {
     let here = IsDefined(player) ? player.GetWorldPosition() : this.m_anchor;
 
     // Dogtown is its own jurisdiction: heat never crosses its border, either way.
-    if stage >= 1 && cfg.dogtownBorder && this.Active(ps) {
+    // Compatibility: another mod may own what happens at the border (NCPDHCompat.reds).
+    if stage >= 1 && cfg.dogtownBorder && this.Active(ps) && this.CompatOurs(NCPDHCompatArea.DogtownBorder, ps) {
       let inDogtown = NCPDHCorp.InDistrict(ps, gamedataDistrict.Dogtown);
       if !this.m_heatZoneKnown {
         this.m_heatZoneKnown = true;
         this.m_heatInDogtown = inDogtown;
+        this.Compat().SnapshotSticky(ps);
       } else {
+        if Equals(inDogtown, this.m_heatInDogtown) {
+          // Still on the side where the heat was earned: remember NCPD Duty Expansion's Sticky
+          // Heat per area, so a crossing can be undone below. Does nothing without that mod.
+          this.Compat().SnapshotSticky(ps);
+        }
         if NotEquals(inDogtown, this.m_heatInDogtown) {
           if inDogtown {
             this.Log("Crossed into Dogtown: NCPD has no jurisdiction here, heat cleared");
@@ -676,6 +715,9 @@ public class NCPDHSystem extends ScriptableSystem {
           }
           this.m_heatZoneKnown = false;
           ps.NCPDH_ClearHeat("NCPDH_DogtownBorder");
+          // NCPD Duty Expansion turns the cleared heat into Sticky Heat on the far side; undo that
+          // so the border stays a hard line. Does nothing without that mod.
+          this.Compat().OnBorderCleared(this, ps);
           return;
         }
       }
@@ -1427,6 +1469,10 @@ public class NCPDHSystem extends ScriptableSystem {
   public func Report() -> Void {
     let ps = this.Prevention();
     let stage = IsDefined(ps) ? NCPDHSystem.Stage(ps.GetHeatStage()) : -1;
+    let chaseStart = this.CompatOurs(NCPDHCompatArea.ChaseStart, ps) ? "Threat Assessment" : "other mod";
+    let search = this.CompatOurs(NCPDHCompatArea.Search, ps) ? "Threat Assessment" : "other mod";
+    let border = this.CompatOurs(NCPDHCompatArea.DogtownBorder, ps) ? "Threat Assessment" : "other mod";
+    ModLog(n"ThreatAssessment", s"Report: compatibility (found: \(NCPDHCompat.ConflictingMods())) chase start \(chaseStart), search \(search), Dogtown border \(border)");
     ModLog(n"ThreatAssessment", s"Report: heat \(stage), active \(this.Active(ps)), perimeter \(this.m_perimeterOn), officers tracked \(ArraySize(this.m_units)), police killed this chase \(this.m_copKillsThisChase), major crimes counted \(ArraySize(this.m_escalationTimes)), recent civilian kills \(ArraySize(this.m_civKillTimes))");
   }
 }

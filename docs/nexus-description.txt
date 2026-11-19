@@ -1,5 +1,5 @@
 [size=5][b]Threat Assessment – Tactical Police & Jurisdiction Overhaul[/b][/size]
-[i]Version 0.5.0 beta[/i]
+[i]Version 0.6.0 beta[/i]
 
 Night City's police are underfunded and understaffed. This mod makes them act like it. Petty crime gets ignored, real trouble gets an organised response, and the city's corporations police their own turf.
 
@@ -11,7 +11,7 @@ Night City's police are underfunded and understaffed. This mod makes them act li
 [*][b]Rich districts first[/b] – City Center and Westbrook get more officers, sooner.
 [*][b]Police go to the crime scene[/b], not straight to you.
 [*][b]Fewer patrols[/b] – fewer police cars in traffic and officers on foot.
-[*][b]3-star containment perimeter[/b] – officers ring you at 30 m, take cover behind walls and their own cars, and hold. Heat freezes while you're inside. Break out and run; the more cops you've dropped, the more likely the rookies flee.
+[*][b]3-star containment perimeter[/b] – officers ring you at 50 m, take cover behind walls and their own cars, and hold. Heat freezes while you're inside. Break out and run; the more cops you've dropped, the more likely the rookies flee.
 [*][b]Only the heavy hitters go in[/b] – at 5 stars, MaxTac and heavily armored units enter the ring.
 [*][b]Corporate jurisdictions[/b] – in Corpo Plaza, Downtown, Arasaka Waterfront and North Oak, NCPD hands over to Arasaka, Militech or Kang Tao at 3-4 stars and comes back with MaxTac at 5. One corporation per chase.
 [*][b]Corporations protect their own[/b] – hit their guards in the street and a squad comes for you, stars or not.
@@ -19,9 +19,19 @@ Night City's police are underfunded and understaffed. This mod makes them act li
 [*][b]Pacifica[/b] – NCPD doesn't come.
 [*][b]Longer searches[/b] – the police keep looking for a while before they give up.
 [*][b]Voice lines[/b] – officers call out the perimeter, breakouts and MaxTac in their own voices.
+[*][b]Automatic compatibility checks[/b] – other police mods that do the same job are found at game start and handed that job (so far: NCPD Duty Expansion). Every decision can be changed in Settings → Compatibility.
 [*][b]Quest safe[/b] – stays out of missions, never touches quest characters, F7 pauses everything.
 [*][b]Every feature is a setting.[/b]
 [/list]
+
+[size=4][b]Patch notes – 0.6.0 beta[/b][/size]
+[list]
+[*][b]Automatic compatibility checks.[/b] New settings category [b]Compatibility[/b]. At game start the mod looks for other police mods that do the same job as parts of it and lets them handle that job. Each job has a dropdown: Automatic (default), Threat Assessment, or Other mod. A master switch turns detection off.
+[*][b]NCPD Duty Expansion (1.11)[/b] is the first mod checked. With it installed, it handles starting chases and witness reports (district by district, using its own settings), search time, and heat at the Dogtown border. Set the border to Threat Assessment to keep it a hard line; this mod then also resets Duty Expansion's Sticky Heat on the far side.
+[*]A message a few seconds after loading lists what was handed over (setting "Show what was handed over").
+[*][b]New defaults from testing:[/b] perimeter radius 50 m (was 30), 5 major crimes for 4 stars (was 2), 10 for 5 stars (was 3). Saved settings are kept – press Defaults in the menu to pick up the new values.
+[/list]
+Full changelog: https://github.com/allykatz1990/threatassessment/blob/main/CHANGELOG.md
 
 [size=4][b]Requirements[/b][/size]
 [list]
@@ -42,6 +52,8 @@ Every game function is wrapped, never replaced. Tested alongside They Will Remem
 [*][b]Law Enforcement Overhaul[/b] – works; its mercenaries and corporate units get the perimeter and sizing. This mod's district rules win where they differ (no response in Pacifica, Barghest in Dogtown, corporate squads at 3-4 stars). Turn those settings off to keep LEO's version.
 [*][b]Someone Call The Police[/b] – does the same job as this mod's witness calls. Use one; if you keep it, turn off "Witnesses have to finish the call".
 [*][b]Someone Call NCPD[/b] – covers gang fights and shootouts that don't involve you, so it should sit alongside this one.
+[*][b]NCPD Duty Expansion[/b] – detected automatically from 0.6.0; the jobs both mods do are handed to it (see Settings → Compatibility).
+[*][b]Busted[/b] – recommended add-on. Busted arrests at 1 star; this mod's perimeter takes over from 3 stars, so they cover different stages.
 [*][b]The Thin Blue Line[/b] – can run together; it makes NCPD give up after enough kills, which can end a perimeter early. Not tested together yet.
 [/list]
 
