@@ -348,7 +348,8 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "1")
   @runtimeProperty("ModSettings.max", "10")
-  public let eventsFor4: Int32 = 2;
+  // Default 5 since 0.6.0 (was 2): chosen by the author after in-game testing.
+  public let eventsFor4: Int32 = 5;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Escalation (4 and 5 stars)")
@@ -357,7 +358,9 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "1")
   @runtimeProperty("ModSettings.max", "10")
-  public let eventsFor5: Int32 = 3;
+  // Default 10 since 0.6.0 (was 3): chosen by the author after in-game testing. 10 is the
+  // slider maximum.
+  public let eventsFor5: Int32 = 10;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Escalation (4 and 5 stars)")
@@ -403,7 +406,8 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "10")
   @runtimeProperty("ModSettings.max", "80")
-  public let radius: Float = 30.0;
+  // Default 50 since 0.6.0 (was 30): chosen by the author after in-game testing.
+  public let radius: Float = 50.0;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "3-star perimeter")

@@ -34,7 +34,7 @@ try and [CHANGELOG.md](CHANGELOG.md) for what changed.
   before they give up.
 - **Major crimes for 4 and 5 stars.** Only destroyed police vehicles, explosions on police, and a high
   police body count push the heat past 3. MaxTac comes only for sustained escalation.
-- **3-star containment perimeter.** Officers form a ring around V (default 30 m), take cover near it
+- **3-star containment perimeter.** Officers form a ring around V (default 50 m), take cover near it
   and fight from there instead of rushing in. Arriving police cars park on the ring and the officers
   get out there, so the cars become part of the perimeter. Beat cops and officers in ordinary body
   armor never go inside the ring. The ring follows V at a jog, and heat is frozen while V is inside it.

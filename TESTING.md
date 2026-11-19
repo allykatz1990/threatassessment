@@ -25,7 +25,7 @@ on a trunk part). Check the crash report before blaming the mod.
 
 ## 3. The perimeter (3 stars)
 
-- Officers form a ring about 30 m out, take cover and shoot from there. Cars park on the ring.
+- Officers form a ring about 50 m out, take cover and shoot from there. Cars park on the ring.
 - Beat cops who step inside are sent back and then held. Log: `crossed into the ring`. This should
   happen much less than before.
 - Sprint out of the ring: `V broke the perimeter`, and low-rank officers may flee.

@@ -11,7 +11,7 @@ Night City's police are underfunded and understaffed. This mod makes them act li
 [*][b]Rich districts first[/b] – City Center and Westbrook get more officers, sooner.
 [*][b]Police go to the crime scene[/b], not straight to you.
 [*][b]Fewer patrols[/b] – fewer police cars in traffic and officers on foot.
-[*][b]3-star containment perimeter[/b] – officers ring you at 30 m, take cover behind walls and their own cars, and hold. Heat freezes while you're inside. Break out and run; the more cops you've dropped, the more likely the rookies flee.
+[*][b]3-star containment perimeter[/b] – officers ring you at 50 m, take cover behind walls and their own cars, and hold. Heat freezes while you're inside. Break out and run; the more cops you've dropped, the more likely the rookies flee.
 [*][b]Only the heavy hitters go in[/b] – at 5 stars, MaxTac and heavily armored units enter the ring.
 [*][b]Corporate jurisdictions[/b] – in Corpo Plaza, Downtown, Arasaka Waterfront and North Oak, NCPD hands over to Arasaka, Militech or Kang Tao at 3-4 stars and comes back with MaxTac at 5. One corporation per chase.
 [*][b]Corporations protect their own[/b] – hit their guards in the street and a squad comes for you, stars or not.

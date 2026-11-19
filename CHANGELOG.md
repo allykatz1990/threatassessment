@@ -22,6 +22,9 @@ Automatic compatibility checks.
     Sticky Heat on the far side back to what it was before you crossed.
 - A message a few seconds after loading lists what was handed over (setting "Show what was handed
   over"). The debug log lists every decision; the CET `Report()` command prints them too.
+- New defaults from testing: perimeter radius 50 m (was 30), 5 major crimes for 4 stars (was 2),
+  10 major crimes for 5 stars (was 3). Saved settings are kept; use the menu's Defaults button to
+  pick up the new values.
 - Detection happens when the scripts compile, so there is no dependency on the other mod, and
   adding or removing it takes effect on the next game start.
 
