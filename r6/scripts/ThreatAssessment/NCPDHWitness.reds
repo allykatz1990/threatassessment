@@ -51,6 +51,11 @@ public class NCPDHWitness {
     if !sys.Config().witnessCalls || sys.WitnessPassing() || ps.IsChasingPlayer() || !sys.Active(ps) {
       return false;
     }
+    // Compatibility (0.6.0): another mod may decide what starts a chase (NCPDHCompat.reds). Then
+    // the call goes straight to the base game, where that mod handles it.
+    if !sys.CompatOurs(NCPDHCompatArea.ChaseStart, ps) {
+      return false;
+    }
     if !IsDefined(this.m_lastCaller) || sys.Now() - this.m_lastCallerAt > 1.5 {
       return false;   // not a civilian's phone call (stolen police car, hack, script...)
     }
@@ -69,7 +74,7 @@ public class NCPDHWitness {
       return;
     }
     let id = caller.GetEntityID();
-    if sys.ShouldIgnoreWitness() {
+    if sys.ShouldIgnoreWitness(ps) {
       sys.Log("Witness saw only petty crime: no call");
       return;
     }
@@ -238,10 +243,11 @@ public class NCPDHWitness {
     return 0;
   }
 
-  public static func Message(game: GameInstance, text: String) -> Void {
+  // duration added in 0.6.0 for longer messages (compatibility notice); left out it is 3 seconds.
+  public static func Message(game: GameInstance, text: String, opt duration: Float) -> Void {
     let msg: SimpleScreenMessage;
     msg.isShown = true;
-    msg.duration = 3.0;
+    msg.duration = duration > 0.0 ? duration : 3.0;
     msg.message = text;
     GameInstance.GetBlackboardSystem(game).Get(GetAllBlackboardDefs().UI_Notifications).SetVariant(GetAllBlackboardDefs().UI_Notifications.WarningMessage, ToVariant(msg), true);
   }

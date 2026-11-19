@@ -1,5 +1,5 @@
 [size=5][b]Threat Assessment – Tactical Police & Jurisdiction Overhaul[/b][/size]
-[i]Version 0.5.0 beta[/i]
+[i]Version 0.6.0 beta[/i]
 
 Night City's police are underfunded and understaffed. This mod makes them act like it. Petty crime gets ignored, real trouble gets an organised response, and the city's corporations police their own turf.
 
@@ -11,7 +11,7 @@ Night City's police are underfunded and understaffed. This mod makes them act li
 [*][b]Rich districts first[/b] – City Center and Westbrook get more officers, sooner.
 [*][b]Police go to the crime scene[/b], not straight to you.
 [*][b]Fewer patrols[/b] – fewer police cars in traffic and officers on foot.
-[*][b]3-star containment perimeter[/b] – officers ring you at 30 m, take cover behind walls and their own cars, and hold. Heat freezes while you're inside. Break out and run; the more cops you've dropped, the more likely the rookies flee.
+[*][b]3-star containment perimeter[/b] – officers ring you at 50 m, take cover behind walls and their own cars, and hold. Heat freezes while you're inside. Break out and run; the more cops you've dropped, the more likely the rookies flee.
 [*][b]Only the heavy hitters go in[/b] – at 5 stars, MaxTac and heavily armored units enter the ring.
 [*][b]Corporate jurisdictions[/b] – in Corpo Plaza, Downtown, Arasaka Waterfront and North Oak, NCPD hands over to Arasaka, Militech or Kang Tao at 3-4 stars and comes back with MaxTac at 5. One corporation per chase.
 [*][b]Corporations protect their own[/b] – hit their guards in the street and a squad comes for you, stars or not.
@@ -20,6 +20,7 @@ Night City's police are underfunded and understaffed. This mod makes them act li
 [*][b]Longer searches[/b] – the police keep looking for a while before they give up.
 [*][b]Voice lines[/b] – officers call out the perimeter, breakouts and MaxTac in their own voices.
 [*][b]Quest safe[/b] – stays out of missions, never touches quest characters, F7 pauses everything.
+[*][b]Automatic compatibility[/b] – other police mods doing the same job are detected and handed that job; override any decision in the settings.
 [*][b]Every feature is a setting.[/b]
 [/list]
 
@@ -37,6 +38,7 @@ Every game function is wrapped, never replaced. Tested alongside They Will Remem
 
 [b]Other police mods[/b]
 [list]
+[*][b]NCPD Duty Expansion[/b] – detected automatically. It takes over starting chases, search time and the Dogtown border (its Sticky Heat crosses borders). Everything else runs together. Change any of it under Settings → Compatibility.
 [*][b]Eyes on V[/b] – works. Civilians stop reporting crimes, so heat only starts when police see you; this mod's witness calls then have nothing to do.
 [*][b]NCPD Prevention Police Enhancement[/b] – loads fine, but both overhaul the same heat system. Pick one, or keep NCPDPPE and turn off this mod's response size, district response and longer search settings.
 [*][b]Law Enforcement Overhaul[/b] – works; its mercenaries and corporate units get the perimeter and sizing. This mod's district rules win where they differ (no response in Pacifica, Barghest in Dogtown, corporate squads at 3-4 stars). Turn those settings off to keep LEO's version.

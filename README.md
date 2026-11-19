@@ -6,7 +6,7 @@ A Cyberpunk 2077 (2.5, Phantom Liberty supported) mod that makes the NCPD act li
 understaffed department it is in the lore. Petty crime gets ignored. Real trouble gets a fast,
 organised response, and only major crimes bring the heavy hitters.
 
-**Version 0.5.1 beta.** Every planned core feature is in. See [TESTING.md](TESTING.md) for what to
+**Version 0.6.0 beta.** Every planned core feature is in. See [TESTING.md](TESTING.md) for what to
 try and [CHANGELOG.md](CHANGELOG.md) for what changed.
 
 ## What it does now
@@ -34,7 +34,7 @@ try and [CHANGELOG.md](CHANGELOG.md) for what changed.
   before they give up.
 - **Major crimes for 4 and 5 stars.** Only destroyed police vehicles, explosions on police, and a high
   police body count push the heat past 3. MaxTac comes only for sustained escalation.
-- **3-star containment perimeter.** Officers form a ring around V (default 30 m), take cover near it
+- **3-star containment perimeter.** Officers form a ring around V (default 50 m), take cover near it
   and fight from there instead of rushing in. Arriving police cars park on the ring and the officers
   get out there, so the cars become part of the perimeter. Beat cops and officers in ordinary body
   armor never go inside the ring. The ring follows V at a jog, and heat is frozen while V is inside it.
@@ -60,6 +60,10 @@ try and [CHANGELOG.md](CHANGELOG.md) for what changed.
 - **Quest safe.** The mod does nothing while a quest is controlling the police, never gives orders to
   or counts quest characters, and never spawns squads inside a corporation's own restricted areas.
   A pause key (default F7) switches everything off and back on in a moment.
+- **Automatic compatibility checks.** Other police mods that do the same job as part of this one
+  are found when the game starts, and that job is left to them (so far: NCPD Duty Expansion, for
+  starting chases, search time and the Dogtown border). Every decision can be overridden in
+  Settings → Compatibility. See [COMPATIBILITY.md](COMPATIBILITY.md).
 - **Every feature has a setting.** All settings apply live.
 
 ## Planned after 0.5
@@ -90,7 +94,8 @@ which.
 
 ## Compatibility
 
-Every game function the mod touches is wrapped, never replaced. See
+Every game function the mod touches is wrapped, never replaced. Overlapping police mods are
+detected automatically and handed the jobs they share (Settings → Compatibility). See
 [COMPATIBILITY.md](COMPATIBILITY.md) for the full list and the mods it was checked against.
 Night City Alive users: skip its optional "Sensitive Prevention" file, which works against the
 petty crime filter.
