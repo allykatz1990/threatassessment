@@ -51,6 +51,14 @@
 //   2. Add a pair of NCPDHCompat_<Mod>Installed functions with @if(ModuleExists("Something")).
 //   3. In NCPDHCompat.Conflict, return true for each area that mod also handles.
 //   4. Add its name to NCPDHCompat.ConflictingMods and a row to COMPATIBILITY.md.
+//   If your code touches a value whose type lives in that mod's module (for example
+//   PreventionSystem.m_dutyConfig below), import the module with the same @if guard, or redscript
+//   stops with UNRESOLVED_TYPE. The guarded import is skipped when the mod isn't installed.
+
+// Needed for PreventionSystem.m_dutyConfig (type mm_NCPDExpansion_DutiesConfig, module
+// NCPDExpansion.Config). Found when compiling on a real install (2026-11-19).
+@if(ModuleExists("NCPDExpansion.Config"))
+import NCPDExpansion.Config.*
 
 // The player's choice for one area, shown as a dropdown in Mod Settings.
 enum NCPDHCompatChoice {
