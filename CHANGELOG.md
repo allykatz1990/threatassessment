@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.6.0 beta
+
+Automatic compatibility checks.
+
+- New settings category **Compatibility**. When the game starts, the mod looks for other police
+  mods that do the same job as parts of it and lets them handle that job. Each overlapping job has
+  a dropdown: **Automatic** (the default; follows the check), **Threat Assessment** (always use
+  this mod's version) or **Other mod** (never use this mod's version). A master switch,
+  "Automatic compatibility checks", turns the detection off; then every Automatic job runs this
+  mod's version. The feature switches in the other categories still apply on top.
+- First mod checked: **NCPD Duty Expansion** (1.11). With it installed, Automatic hands it:
+  - **Starting a chase** (petty crime filter, witness calls about petty crime, timed witness
+    calls), in every district where its crime system is on. It blocks the base game's own chase
+    start there and uses its own witness reports, so this mod's filter and calls had nothing to act
+    on. Checked live per district with its own settings (its Dogtown and Badlands modes, and its
+    rule that the base game runs until The Rescue is done).
+  - **Search time**: it sets its own, shortens it for NCPD donors and keeps Sticky Heat afterwards.
+  - **Heat at the Dogtown border**: it carries heat across as Sticky Heat on purpose. Set this to
+    Threat Assessment to keep the border a hard line; the mod then also puts Duty Expansion's
+    Sticky Heat on the far side back to what it was before you crossed.
+- A message a few seconds after loading lists what was handed over (setting "Show what was handed
+  over"). The debug log lists every decision; the CET `Report()` command prints them too.
+- Detection happens when the scripts compile, so there is no dependency on the other mod, and
+  adding or removing it takes effect on the next game start.
+
 ## 0.5.1 beta
 
 Packaging only, no gameplay changes.

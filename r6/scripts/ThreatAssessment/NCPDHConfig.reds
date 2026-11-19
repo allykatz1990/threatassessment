@@ -30,11 +30,56 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.description", "Press to pause or resume everything this mod does, for example if a mission behaves oddly. A message shows the new state. The setting above stays as it is.")
   public let pauseKey: EInputKey = EInputKey.IK_F7;
 
+  // ------------------------------------------------------------------ Compatibility
+  // Added in 0.6.0. Other police mods that do the same job as parts of this mod are found when the
+  // game starts (NCPDHCompat.reds). For each overlapping job ("area") the dropdown picks who
+  // handles it. "Automatic" lets the check decide; the other two values override it. The feature
+  // switches in the other categories still apply on top: an area set to Threat Assessment with
+  // its feature switched off stays off.
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Compatibility")
+  @runtimeProperty("ModSettings.displayName", "Automatic compatibility checks")
+  @runtimeProperty("ModSettings.description", "When the game starts, looks for other police mods that do the same job as parts of this one (so far: NCPD Duty Expansion) and lets them handle it. Each job set to Automatic below follows this. Off: every job set to Automatic runs Threat Assessment's version.")
+  public let autoCompat: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Compatibility")
+  @runtimeProperty("ModSettings.displayName", "Starting a chase")
+  @runtimeProperty("ModSettings.description", "Who decides whether a crime with no stars starts a chase: the petty crime filter and witness calls. NCPD Duty Expansion starts chases from its own witness reports and blocks the base game's, so with it installed Threat Assessment's filter and calls have nothing to act on. Automatic hands this to it in every district where its crime system is on.")
+  @runtimeProperty("ModSettings.displayValues.Auto", "Automatic")
+  @runtimeProperty("ModSettings.displayValues.ThreatAssessment", "Threat Assessment")
+  @runtimeProperty("ModSettings.displayValues.OtherMod", "Other mod (Threat Assessment's off)")
+  public let compatChaseStart: NCPDHCompatChoice = NCPDHCompatChoice.Auto;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Compatibility")
+  @runtimeProperty("ModSettings.displayName", "Search time")
+  @runtimeProperty("ModSettings.description", "Who decides how long the police search once they lose you (Police keep searching longer). NCPD Duty Expansion sets its own search time, shortens it if you donate to NCPD, and remembers you afterwards with Sticky Heat. Threat Assessment's minimum search would cancel the donation.")
+  @runtimeProperty("ModSettings.displayValues.Auto", "Automatic")
+  @runtimeProperty("ModSettings.displayValues.ThreatAssessment", "Threat Assessment")
+  @runtimeProperty("ModSettings.displayValues.OtherMod", "Other mod (Threat Assessment's off)")
+  public let compatSearch: NCPDHCompatChoice = NCPDHCompatChoice.Auto;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Compatibility")
+  @runtimeProperty("ModSettings.displayName", "Heat at the Dogtown border")
+  @runtimeProperty("ModSettings.description", "Who decides what happens to heat when you cross into or out of Dogtown. NCPD Duty Expansion carries it across as Sticky Heat on purpose. Set to Threat Assessment to keep the border as a hard jurisdiction line: the heat is cleared and Duty Expansion's Sticky Heat on the far side is put back to what it was before you crossed.")
+  @runtimeProperty("ModSettings.displayValues.Auto", "Automatic")
+  @runtimeProperty("ModSettings.displayValues.ThreatAssessment", "Threat Assessment")
+  @runtimeProperty("ModSettings.displayValues.OtherMod", "Other mod (Threat Assessment's off)")
+  public let compatDogtownBorder: NCPDHCompatChoice = NCPDHCompatChoice.Auto;
+
+  @runtimeProperty("ModSettings.mod", "Threat Assessment")
+  @runtimeProperty("ModSettings.category", "Compatibility")
+  @runtimeProperty("ModSettings.displayName", "Show what was handed over")
+  @runtimeProperty("ModSettings.description", "A few seconds after a save loads, a message lists the jobs another mod is handling. The debug log always lists every decision.")
+  public let compatNotice: Bool = true;
+
   // ------------------------------------------------------------------ Petty crime filter
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Petty crime filter")
   @runtimeProperty("ModSettings.displayName", "Ignore petty crime")
-  @runtimeProperty("ModSettings.description", "With no stars, hurting or killing a civilian adds no heat until the kill count below is reached. Attacks on police always count.")
+  @runtimeProperty("ModSettings.description", "With no stars, hurting or killing a civilian adds no heat until the kill count below is reached. Attacks on police always count. May be handed to another mod: see Compatibility.")
   public let pettyFilter: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -65,7 +110,7 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Witness calls")
   @runtimeProperty("ModSettings.displayName", "Witnesses have to finish the call")
-  @runtimeProperty("ModSettings.description", "With no stars, a civilian calling NCPD takes time. Kill or knock out the caller before the call goes through and nobody comes. Once you are already wanted, calls go through at once.")
+  @runtimeProperty("ModSettings.description", "With no stars, a civilian calling NCPD takes time. Kill or knock out the caller before the call goes through and nobody comes. Once you are already wanted, calls go through at once. May be handed to another mod: see Compatibility.")
   public let witnessCalls: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -207,7 +252,7 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Search")
   @runtimeProperty("ModSettings.displayName", "Police keep searching longer")
-  @runtimeProperty("ModSettings.description", "Once the police lose sight of you they keep searching (grey stars) for at least the time below before the stars start to fade.")
+  @runtimeProperty("ModSettings.description", "Once the police lose sight of you they keep searching (grey stars) for at least the time below before the stars start to fade. May be handed to another mod: see Compatibility.")
   public let longSearch: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
@@ -684,7 +729,7 @@ public class NCPDHConfig {
   @runtimeProperty("ModSettings.mod", "Threat Assessment")
   @runtimeProperty("ModSettings.category", "Dogtown and Pacifica")
   @runtimeProperty("ModSettings.displayName", "Heat stops at the Dogtown border")
-  @runtimeProperty("ModSettings.description", "Dogtown is its own jurisdiction. Cross into Dogtown and all NCPD heat is gone; leave Dogtown and the heat you earned with Barghest stays behind.")
+  @runtimeProperty("ModSettings.description", "Dogtown is its own jurisdiction. Cross into Dogtown and all NCPD heat is gone; leave Dogtown and the heat you earned with Barghest stays behind. May be handed to another mod: see Compatibility.")
   public let dogtownBorder: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Threat Assessment")

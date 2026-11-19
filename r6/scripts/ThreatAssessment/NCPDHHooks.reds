@@ -21,7 +21,9 @@
 //   PreventionSystem.UpdateStarStateTo              search timing
 //   PreventionSystem.OnPreventionSearchingStatusRequest  police keep searching for the set time
 // Known other mods wrapping the same functions: Gang Retaliation (CalculateCrimeScoreForNPC),
-// Cop Killer (ChangeHeatStage). Both work in either load order.
+// Cop Killer (ChangeHeatStage). Both work in either load order. NCPD Duty Expansion wraps
+// ChangeHeatStage and execInstructionSafe and replaces StartSearchingTimerRequest; the overlap is
+// handled by the automatic compatibility checks in NCPDHCompat.reds (Mod Settings > Compatibility).
 
 // ---------------------------------------------------------------- helpers added to PreventionSystem
 
@@ -114,7 +116,7 @@ public final static func NotifyVehicleExplosion(veh: ref<VehicleObject>) -> Void
 @wrapMethod(PreventionSystem)
 protected final func OnCrimeWitnessRequest(request: ref<PreventionCrimeWitnessRequest>) -> Void {
   let sys = NCPDHSystem.Get(this.GetGameInstance());
-  if IsDefined(sys) && !this.IsChasingPlayer() && sys.Active(this) && !sys.WitnessPassing() && sys.ShouldIgnoreWitness() {
+  if IsDefined(sys) && !this.IsChasingPlayer() && sys.Active(this) && !sys.WitnessPassing() && sys.ShouldIgnoreWitness(this) {
     sys.Log("Witness call about a petty crime: ignored");
     return;
   }

@@ -1,4 +1,4 @@
-# Testing Threat Assessment 0.5.1 beta
+# Testing Threat Assessment 0.6.0 beta
 
 Turn on **Debug log** (Settings → Threat Assessment → General). Everything the mod decides is written
 to `bin\x64\plugins\cyber_engine_tweaks\gamelog.log` as `[ThreatAssessment]` lines. Send those lines
@@ -63,3 +63,30 @@ Stand near officers or corporate soldiers and run in the CET console:
     Game.GetScriptableSystemsContainer():Get("NCPDHSystem"):VoiceTest()
 
 Each run plays the next line and logs it. Note which ones you actually hear.
+
+## 9. Compatibility checks (0.6.0)
+
+Without NCPD Duty Expansion:
+
+- Load a save. Log: `Compatibility: no overlapping police mods found`. No message on screen.
+- Sections 1, 2 and 5 behave exactly as before.
+
+With NCPD Duty Expansion installed:
+
+- Load a save. About 10 seconds later on screen: *Threat Assessment: NCPD Duty Expansion handles
+  starting chases ..., search time, heat at the Dogtown border.* Log: one `Compatibility:` line per
+  job.
+- CET: `Game.GetScriptableSystemsContainer():Get("NCPDHSystem"):Report()` prints
+  `chase start other mod, search other mod, Dogtown border other mod`.
+- Hurt a civilian in Night City with no stars: no `petty, ignored` line from Threat Assessment and
+  no *A witness is calling NCPD* message. Duty Expansion's own reporting decides.
+- Get 3 stars: the perimeter, corporate handover and response size work as usual.
+- Hide: grey stars follow Duty Expansion's timing, no `Still searching` lines.
+- Cross into Dogtown with stars: Duty Expansion's Sticky Heat carries over (its HUD shows it).
+- Set **Heat at the Dogtown border** to *Threat Assessment* and cross again: heat cleared, then log
+  `carried the chase over the Dogtown border as Sticky Heat N; set back to M` and Duty Expansion's
+  HUD drops back.
+- Set **Starting a chase** to *Threat Assessment*: the witness messages come back, but in Night City
+  Duty Expansion still blocks the base game's chase start, so the calls lead nowhere. That's
+  expected: this override is for Duty Expansion districts set to the base game.
+- Turn off **Automatic compatibility checks**: every Automatic job goes back to Threat Assessment.
